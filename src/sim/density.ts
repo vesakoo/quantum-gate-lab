@@ -149,6 +149,31 @@ export class DensityMatrix implements Backend {
     return blochFrom(2 * re01, -2 * im01, p0 - p1);
   }
 
+  /** Tr(ρ²): 1 for a pure state, 1/2^n for the maximally mixed one. */
+  purity(): number {
+    let s = 0;
+    for (let k = 0; k < this.rho.length; k++) s += this.rho[k] * this.rho[k];
+    return s;
+  }
+
+  /**
+   * If ρ is pure (Tr ρ² ≈ 1), a state vector ψ with ρ = |ψ⟩⟨ψ| (interleaved re/im, defined up to a
+   * global phase), read off the column of the largest diagonal entry: ψ[r] = ρ[r][c] / √ρ[c][c].
+   */
+  pureState(tol = 1e-9): Float64Array | null {
+    if (this.purity() < 1 - tol) return null;
+    const D = this.dim;
+    let c = 0;
+    for (let i = 1; i < D; i++) if (this.rho[2 * (i * D + i)] > this.rho[2 * (c * D + c)]) c = i;
+    const norm = Math.sqrt(this.rho[2 * (c * D + c)]);
+    const out = new Float64Array(2 * D);
+    for (let r = 0; r < D; r++) {
+      out[2 * r] = this.rho[2 * (r * D + c)] / norm;
+      out[2 * r + 1] = this.rho[2 * (r * D + c) + 1] / norm;
+    }
+    return out;
+  }
+
   probabilities(): Float64Array {
     const D = this.dim;
     const out = new Float64Array(D);

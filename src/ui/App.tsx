@@ -15,6 +15,7 @@ import BlochStrip, { type BlochSel } from './BlochStrip';
 import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
 import { dropTarget, gridCollision } from './drop';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
+import KetView from './KetView';
 import Palette from './Palette';
 import ProbabilityChart from './ProbabilityChart';
 import { useCircuit } from './useCircuit';
@@ -275,6 +276,14 @@ export default function App() {
           <button type="button" onClick={onClear}>Clear</button>
           {ioError ? <span className="error" role="alert">{ioError}</span> : null}
         </div>
+        {sim ? (
+          <KetView
+            amplitudes={sim.amplitudes}
+            purity={sim.purity}
+            numQubits={sim.numQubits}
+            stale={!simFresh || computing}
+          />
+        ) : null}
         {sim ? (
           <ProbabilityChart probabilities={sim.probabilities} numQubits={sim.numQubits} stale={!simFresh || computing} />
         ) : null}
