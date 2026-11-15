@@ -106,5 +106,30 @@ describe('Bloch strip', () => {
     const panel = screen.getByRole('complementary', { name: 'Bloch sphere q[1] after step 2' });
     expect(within(panel).getByText('entangled / mixed')).toBeInTheDocument();
     expect(within(panel).getByTestId('bloch-length')).toHaveTextContent('0.000');
+    expect(within(panel).getByTestId('bloch-theta')).toHaveTextContent('—');
+    expect(within(panel).getByTestId('bloch-phi')).toHaveTextContent('—');
+    expect(within(panel).queryByTestId('bloch-euler')).not.toBeInTheDocument();
+    expect(within(panel).getByTestId('bloch-euler-mixed')).toHaveTextContent('no single |ψ⟩');
+  });
+
+  it('the panel shows polar angles and the Euler form', () => {
+    // H then S: |i⟩
+    const c = placeGate(placeGate(emptyCircuit(), 'H', 0, 0), 'S', 1, 0);
+    history.replaceState(null, '', `/#${toHash(c)}`);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'q[0] after step 2' }));
+    const p = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] after step 2' }));
+    expect(p.getByTestId('bloch-theta')).toHaveTextContent('π/2 (90.0°)');
+    expect(p.getByTestId('bloch-phi')).toHaveTextContent('π/2 (90.0°)');
+    const euler = p.getByTestId('bloch-euler');
+    expect(euler).toHaveTextContent('|ψ⟩ = 0.707|0⟩ + eiπ/2·0.707|1⟩');
+    expect(euler.querySelector('sup')).toHaveTextContent('iπ/2');
+
+    // input |0⟩: θ = 0, φ undefined at the pole
+    fireEvent.click(screen.getByRole('button', { name: 'q[0] input' }));
+    const p0 = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] input' }));
+    expect(p0.getByTestId('bloch-theta')).toHaveTextContent('0 (0.0°)');
+    expect(p0.getByTestId('bloch-phi')).toHaveTextContent('—');
+    expect(p0.getByTestId('bloch-euler')).toHaveTextContent('|ψ⟩ = |0⟩');
   });
 });

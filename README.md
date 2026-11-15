@@ -34,6 +34,7 @@ npm run typecheck
 ## Conventions
 
 - q[0] is the leftmost (most significant) bit: `0100` means q1 = 1.
+- The Bloch panel also shows polar angles θ (from +z) and φ (from +x toward +y) and, for pure states, the Euler form |ψ⟩ = cos(θ/2)|0⟩ + e<sup>iφ</sup>·sin(θ/2)|1⟩ (global phase dropped). φ is undefined at the poles and both angles are undefined for a fully mixed qubit.
 - Controls (filled = on 1, hollow = on 0) in a step apply to every unitary gate in that step.
 - The B gate is a Bell-pair gate (H on one wire, then CNOT): the dot marks its H/control end; the other end is the CNOT target.
 - Measure is dephasing: it removes coherence and does not collapse randomly, so outputs stay deterministic. Circuits with measure/reset use a density-matrix backend (the cheaper state vector is used up to the first measure/reset step).

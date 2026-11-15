@@ -807,6 +807,24 @@ body {
   font-size: 13px;
 }
 
+.bloch-subhead {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bloch-polar {
+  grid-template-columns: auto 1fr;
+  margin-bottom: 4px;
+}
+
+.bloch-euler {
+  margin: 0 0 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .bloch-probs caption {
   text-align: left;
   font-size: 12px;
