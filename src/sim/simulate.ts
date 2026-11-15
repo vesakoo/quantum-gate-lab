@@ -12,6 +12,13 @@ export type SimResult = {
   probabilities: number[];
   qubitP1: number[];
   backend: 'statevector' | 'density';
+  /**
+   * Final pure state as 2^n amplitudes interleaved re/im (index i at [2i], [2i+1]); null for a mixed
+   * state. From the density backend it is only defined up to a global phase.
+   */
+  amplitudes: number[] | null;
+  /** Tr(ρ²) of the final state: 1 when pure. */
+  purity: number;
 };
 
 function snapshot(b: Backend): Bloch[] {
@@ -68,11 +75,24 @@ export function simulate(c: Circuit, { hybrid = true }: { hybrid?: boolean } = {
 
   const probabilities = Array.from(backend.probabilities(), (p) => (p < 1e-12 ? 0 : p));
   const last = bloch[bloch.length - 1];
+  let amplitudes: number[] | null;
+  let purity: number;
+  if (backend instanceof StateVector) {
+    amplitudes = Array.from(backend.amplitudes());
+    purity = 1;
+  } else {
+    const dm = backend as DensityMatrix;
+    purity = dm.purity();
+    const psi = dm.pureState();
+    amplitudes = psi ? Array.from(psi) : null;
+  }
   return {
     numQubits: n,
     bloch,
     probabilities,
     qubitP1: last.map((b) => b.probs.one),
     backend: needsDensity ? 'density' : 'statevector',
+    amplitudes,
+    purity,
   };
 }

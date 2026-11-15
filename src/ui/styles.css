@@ -505,11 +505,13 @@ body {
 
 /* results from an older circuit (e.g. right after adding/removing a qubit) */
 .prob-chart,
+.ket-view,
 .bloch-strip {
   transition: opacity 0.15s ease;
 }
 
 .prob-chart.stale,
+.ket-view.stale,
 .bloch-strip.stale {
   opacity: 0.45;
   transition-delay: 0.25s;
@@ -897,4 +899,59 @@ body {
 .io-toolbar .error {
   color: #b00020;
   font-size: 13px;
+}
+
+.ket-view {
+  margin-top: 16px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.ket-view header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ket-view h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.ket-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.ket-actions label {
+  font-size: 13px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.ket {
+  margin: 10px 0 4px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.ket sup {
+  font-size: 0.7em;
+}
+
+.ket-mixed {
+  font-family: inherit;
+  font-size: 14px;
+  color: #555;
+}
+
+.ket-note {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
 }
