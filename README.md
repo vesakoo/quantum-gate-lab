@@ -31,5 +31,5 @@ npm run typecheck
 
 - q[0] is the leftmost (most significant) bit: `0100` means q1 = 1.
 - Controls (filled = on 1, hollow = on 0) in a step apply to every unitary gate in that step.
-- The B gate is a Bell-pair gate; its two wires are H and control ends, marked by role.
-- Measure is dephasing: it removes coherence and does not collapse randomly, so outputs stay deterministic. Circuits with measure/reset use a density-matrix backend.
+- The B gate is a Bell-pair gate (H on one wire, then CNOT): the dot marks its H/control end; the other end is the CNOT target.
+- Measure is dephasing: it removes coherence and does not collapse randomly, so outputs stay deterministic. Circuits with measure/reset use a density-matrix backend (the cheaper state vector is used up to the first measure/reset step).
