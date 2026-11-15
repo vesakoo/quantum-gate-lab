@@ -126,8 +126,9 @@ describe('Bloch strip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'q[0] after step 3' }));
     const p3 = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] after step 3' }));
     const euler = p3.getByTestId('bloch-euler');
-    expect(euler).toHaveTextContent('|ψ⟩ = (|0⟩ − e−iπ/4|1⟩)/√2');
-    expect(euler.querySelector('sup')).toHaveTextContent('−iπ/4');
+    expect(p3.getByTestId('bloch-phi')).toHaveTextContent('3π/4 (135.0°)');
+    expect(euler).toHaveTextContent('|ψ⟩ = (|0⟩ + ei3π/4|1⟩)/√2');
+    expect(euler.querySelector('sup')).toHaveTextContent('i3π/4');
 
     // input |0⟩: θ = 0, φ undefined at the pole
     fireEvent.click(screen.getByRole('button', { name: 'q[0] input' }));

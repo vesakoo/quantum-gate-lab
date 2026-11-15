@@ -14,6 +14,8 @@ describe('formatRadians', () => {
     expect(formatRadians((3 * PI) / 2)).toBe('3π/2');
     expect(formatRadians((5 * PI) / 12)).toBe('5π/12');
     expect(formatRadians(PI / 2 + 1e-9)).toBe('π/2');
+    expect(formatRadians(-PI / 4)).toBe('−π/4');
+    expect(formatRadians((-3 * PI) / 4)).toBe('−3π/4');
   });
   it('prints other angles as radians with 3 decimals', () => {
     expect(formatRadians(1)).toBe('1.000');

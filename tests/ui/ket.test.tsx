@@ -105,8 +105,9 @@ describe('formatKet', () => {
     expect(ketOf(1, [[op('H', [0])], [op('S', [0])], [op('H', [0])]])).toBe('(|0⟩ − i|1⟩)/√2');
     expect(ketOf(1, [[op('H', [0])], [op('T', [0])]])).toBe('(|0⟩ + e^{iπ/4}|1⟩)/√2');
     expect(ketOf(1, [[op('H', [0])], [op('Tdg', [0])]])).toBe('(|0⟩ + e^{−iπ/4}|1⟩)/√2');
-    // 3π/4 is written as a sign and −π/4
-    expect(ketOf(1, [[op('H', [0])], [op('P', [0], ['3*pi/4'])]])).toBe('(|0⟩ − e^{−iπ/4}|1⟩)/√2');
+    // 3π/4 stays e^{i3π/4} (matches φ in the Bloch panel); only −1 and −i become a sign
+    expect(ketOf(1, [[op('H', [0])], [op('P', [0], ['3*pi/4'])]])).toBe('(|0⟩ + e^{i3π/4}|1⟩)/√2');
+    expect(ketOf(1, [[op('H', [0])], [op('P', [0], ['-3*pi/4'])]])).toBe('(|0⟩ + e^{−i3π/4}|1⟩)/√2');
   });
 
   it('drops the global phase', () => {

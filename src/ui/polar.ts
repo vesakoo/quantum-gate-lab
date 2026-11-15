@@ -34,7 +34,8 @@ export function formatRadians(rad: number): string {
   const g = gcd(Math.abs(k), 12);
   const num = k / g;
   const den = 12 / g;
-  const head = num === 1 ? 'π' : num === -1 ? '−π' : `${num}π`;
+  const sign = num < 0 ? '−' : '';
+  const head = Math.abs(num) === 1 ? `${sign}π` : `${sign}${Math.abs(num)}π`;
   return den === 1 ? head : `${head}/${den}`;
 }
 

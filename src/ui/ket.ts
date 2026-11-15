@@ -65,25 +65,20 @@ export function symbolicSqrt(m2: number): Frac | null {
 
 type Phase = { neg: boolean; unit: string } | null;
 
-/** Phase φ as a sign plus one of '', 'i', 'e^{iπ/4}', … with φ reduced to (−π/2, π/2]; null if not a multiple of π/12. */
+/** Phase φ as a sign plus one of '', 'i', 'e^{i3π/4}', … with φ in (−π, π]; null if not a multiple of π/12. */
 function symbolicPhase(phi: number): Phase {
   const k = Math.round(phi / PHASE_STEP);
   if (Math.abs(phi - k * PHASE_STEP) > 1e-6) return null;
   let kk = ((k % 24) + 24) % 24; // φ = kk·π/12 in [0, 2π)
   if (kk > 12) kk -= 24; // (−π, π]
-  let neg = false;
-  if (kk > 6) {
-    kk -= 12;
-    neg = true;
-  } else if (kk <= -6) {
-    kk += 12;
-    neg = true;
-  }
-  if (kk === 0) return { neg, unit: '' };
-  if (kk === 6) return { neg, unit: 'i' };
+  // only −1 and −i become a sign; other phases stay e^{iφ} so they match the φ shown in the Bloch panel
+  if (kk === 0) return { neg: false, unit: '' };
+  if (kk === 12) return { neg: true, unit: '' };
+  if (kk === 6) return { neg: false, unit: 'i' };
+  if (kk === -6) return { neg: true, unit: 'i' };
   const r = formatRadians(kk * PHASE_STEP); // e.g. π/4, −π/4, 5π/12
   const exp = r.startsWith('−') ? `−i${r.slice(1)}` : `i${r}`;
-  return { neg, unit: `e^{${exp}}` };
+  return { neg: false, unit: `e^{${exp}}` };
 }
 
 const dec = (v: number): string => {
