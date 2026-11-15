@@ -2,6 +2,10 @@
 
 A browser-based quantum circuit simulator. Drag gates onto up to 10 qubit wires, see per-step Bloch spheres and the output probability distribution update live. Circuits can be saved/loaded as JSON or shared as a link (the circuit is encoded in the URL hash).
 
+![Quantum Gate Lab: an SX† gate puts q[0] into |i⟩, shown on its Bloch sphere](docs/images/screenshot.png)
+
+*An SX† (√X†) gate takes q[0] from |0⟩ to |i⟩: the arrow points along +y and P(|i⟩) = 100 %.*
+
 ## Run
 
 ```
