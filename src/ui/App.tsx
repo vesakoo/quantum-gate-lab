@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
-import type { Circuit, Op } from '../model/circuit';
+import { emptyCircuit, type Circuit, type Op } from '../model/circuit';
+import { parseCircuit, toHash, toJSON } from '../model/serialize';
 import {
   MAX_QUBITS, addQubit, moveControl, moveOp, moveOpEnd, placeControl, placeGate, removeControl,
   removeOp, removeQubit, setParams, toggleInitial,
@@ -14,6 +15,7 @@ import BlochStrip, { type BlochSel } from './BlochStrip';
 import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
 import Palette from './Palette';
+import ProbabilityChart from './ProbabilityChart';
 import { useCircuit } from './useCircuit';
 import { useSimulation } from './useSimulation';
 import './styles.css';
@@ -91,6 +93,44 @@ export default function App() {
         );
         return;
     }
+  };
+
+  const [ioError, setIoError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const onSave = () => {
+    const url = URL.createObjectURL(new Blob([toJSON(circuit)], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'circuit.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+  const onLoadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    const r = parseCircuit(await f.text());
+    if (r.ok) {
+      replace(r.circuit);
+      setIoError(null);
+      setSelection(null);
+    } else setIoError(`Could not load ${f.name}: ${r.error}`);
+  };
+  const onCopyLink = async () => {
+    const url = `${location.origin}${location.pathname}${location.search}#${toHash(circuit)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setIoError('Could not copy the link; copy it from the address bar.');
+    }
+  };
+  const onClear = () => {
+    replace(emptyCircuit());
+    setSelection(null);
+    setIoError(null);
   };
 
   const onSelect = useCallback((s: Selection) => setSelection(s), []);
@@ -202,6 +242,22 @@ export default function App() {
             angle gate to edit it
           </span>
         </div>
+        <div className="io-toolbar">
+          <button type="button" onClick={onSave}>Save</button>
+          <button type="button" onClick={() => fileRef.current?.click()}>Load</button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".json,application/json"
+            aria-label="Load circuit file"
+            hidden
+            onChange={onLoadFile}
+          />
+          <button type="button" onClick={onCopyLink}>{copied ? 'Copied!' : 'Copy link'}</button>
+          <button type="button" onClick={onClear}>Clear</button>
+          {ioError ? <span className="error" role="alert">{ioError}</span> : null}
+        </div>
+        {sim ? <ProbabilityChart probabilities={sim.probabilities} numQubits={circuit.numQubits} /> : null}
       </div>
       {blochSel && panelValid && panelBloch ? (
         <BlochPanel qubit={blochSel.qubit} step={blochSel.s} bloch={panelBloch} onClose={closeBloch} />

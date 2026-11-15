@@ -803,3 +803,45 @@ body {
   font-family: ui-monospace, Menlo, Consolas, monospace;
   white-space: nowrap;
 }
+
+.prob-chart {
+  margin-top: 16px;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 4px;
+  padding: 8px 12px;
+}
+
+.prob-chart header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.prob-chart h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.prob-chart label {
+  font-size: 13px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.prob-scroll {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.io-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.io-toolbar .error {
+  color: #b00020;
+  font-size: 13px;
+}
