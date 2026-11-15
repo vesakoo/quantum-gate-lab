@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Bloch } from '../sim/backend';
 import { blochLabel } from './BlochStrip';
 import type { BlochScene } from './blochScene';
+import { blochPolar, eulerState, withDegrees } from './polar';
 
 type Props = {
   qubit: number;
@@ -48,6 +49,7 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
   }, [bloch]);
 
   const title = blochLabel(qubit, step);
+  const polar = blochPolar(bloch);
   const probs: [string, number][] = [
     ['|0⟩', bloch.probs.zero],
     ['|1⟩', bloch.probs.one],
@@ -82,6 +84,25 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
         <dt>length</dt>
         <dd data-testid="bloch-length">{fmt(bloch.length)}</dd>
       </dl>
+      <p className="bloch-subhead">Polar (Euler) form</p>
+      <dl className="bloch-coords bloch-polar">
+        <dt>θ</dt>
+        <dd data-testid="bloch-theta">{polar.theta === null ? '—' : withDegrees(polar.theta)}</dd>
+        <dt>φ</dt>
+        <dd data-testid="bloch-phi">{polar.phi === null ? '—' : withDegrees(polar.phi)}</dd>
+      </dl>
+      {bloch.mixed ? (
+        <p className="bloch-euler" data-testid="bloch-euler-mixed">
+          mixed state (r = {fmt(polar.r)}): no single |ψ⟩; θ and φ give the arrow&apos;s direction
+        </p>
+      ) : (
+        <p className="bloch-euler" data-testid="bloch-euler">
+          |ψ⟩ ={' '}
+          {eulerState(polar.theta ?? 0, polar.phi)
+            .split(/e\^\{(.+?)\}/)
+            .map((part, i) => (i % 2 === 1 ? <span key={i}>e<sup>{part}</sup></span> : part))}
+        </p>
+      )}
       <table className="bloch-probs">
         <caption>Measurement probabilities</caption>
         <tbody>
