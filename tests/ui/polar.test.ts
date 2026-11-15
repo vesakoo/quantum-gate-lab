@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blochFrom } from '../../src/sim/backend';
-import { blochPolar, eulerState, formatRadians, withDegrees } from '../../src/ui/polar';
+import { blochPolar, formatRadians, withDegrees } from '../../src/ui/polar';
 
 const PI = Math.PI;
 
@@ -54,30 +54,5 @@ describe('blochPolar', () => {
     expect(p.r).toBeCloseTo(0.5, 9);
     expect(p.theta).toBeCloseTo(PI / 2, 9);
     expect(p.phi).toBeCloseTo(PI / 2, 9);
-  });
-});
-
-describe('eulerState', () => {
-  const s = (x: number, y: number, z: number) => {
-    const p = blochPolar(blochFrom(x, y, z));
-    return eulerState(p.theta!, p.phi);
-  };
-  it('poles collapse to a single basis state', () => {
-    expect(s(0, 0, 1)).toBe('|0⟩');
-    expect(s(0, 0, -1)).toBe('|1⟩');
-  });
-  it('|+⟩ and |−⟩ use plain signs', () => {
-    expect(s(1, 0, 0)).toBe('0.707|0⟩ + 0.707|1⟩');
-    expect(s(-1, 0, 0)).toBe('0.707|0⟩ − 0.707|1⟩');
-  });
-  it('|i⟩ and |−i⟩ show the Euler phase', () => {
-    expect(s(0, 1, 0)).toBe('0.707|0⟩ + e^{iπ/2}·0.707|1⟩');
-    expect(s(0, -1, 0)).toBe('0.707|0⟩ + e^{i3π/2}·0.707|1⟩');
-  });
-  it('general angles print as radians', () => {
-    // RY(1)|0⟩: θ = 1, φ = 0
-    expect(s(Math.sin(1), 0, Math.cos(1))).toBe('0.878|0⟩ + 0.479|1⟩');
-    // θ = π/2, φ = 1
-    expect(s(Math.cos(1), Math.sin(1), 0)).toBe('0.707|0⟩ + e^{i1.000}·0.707|1⟩');
   });
 });

@@ -42,20 +42,3 @@ export function formatRadians(rad: number): string {
 export function withDegrees(rad: number): string {
   return `${formatRadians(rad)} (${((rad * 180) / Math.PI).toFixed(1)}°)`;
 }
-
-/**
- * The pure state in Euler form, global phase dropped:
- * cos(θ/2)|0⟩ + e^{iφ}·sin(θ/2)|1⟩. Phases 0 and π become plain + / −.
- */
-export function eulerState(theta: number, phi: number | null): string {
-  const a = Math.cos(theta / 2);
-  const b = Math.sin(theta / 2);
-  if (b < 5e-4) return '|0⟩';
-  if (a < 5e-4) return '|1⟩';
-  const p = phi ?? 0;
-  const amp0 = `${a.toFixed(3)}|0⟩`;
-  const amp1 = `${b.toFixed(3)}|1⟩`;
-  if (Math.abs(p) < EPS) return `${amp0} + ${amp1}`;
-  if (Math.abs(p - Math.PI) < EPS) return `${amp0} − ${amp1}`;
-  return `${amp0} + e^{i${formatRadians(p)}}·${amp1}`;
-}

@@ -9,13 +9,12 @@ const PHASE_STEP = Math.PI / 12;
 
 const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
 
-/** Denominators tried for |a|² = p/q, smallest first: 1…64, then powers of two up to 2^10. */
-const DENOMS: number[] = (() => {
-  const out: number[] = [];
-  for (let q = 1; q <= 64; q++) out.push(q);
-  for (let q = 128; q <= 1024; q *= 2) out.push(q);
-  return out;
-})();
+/**
+ * Denominators tried for |a|² = p/q, smallest first. Only "nice" ones (powers of two, which gates
+ * like H produce, plus 3, 6 and 12): with every q up to 64, generic values such as 0.3 came out as
+ * √30/10 and arbitrary angles could hit a fraction by coincidence.
+ */
+const DENOMS: number[] = [1, 2, 3, 4, 6, 8, 12, 16, 32, 64, 128, 256, 512, 1024];
 
 /** Splits v = s²·r with r square-free; returns [s, r]. */
 function splitSquare(v: number): [number, number] {
@@ -100,7 +99,7 @@ function phaseOnly(re: number, im: number): Coef {
   const phi = Math.atan2(im, re);
   const ph = symbolicPhase(phi);
   if (ph) return { neg: ph.neg, body: ph.unit };
-  return { neg: false, body: `e^{i${dec(phi)}}` };
+  return { neg: false, body: phi < 0 ? `e^{−i${dec(-phi)}}` : `e^{i${dec(phi)}}` };
 }
 
 function general(re: number, im: number): Coef {
@@ -130,6 +129,17 @@ function termBody(c: Coef, label: string): string {
   // a '/' outside an exponent's braces means a fraction
   const wrap = b.replace(/\{[^}]*\}/g, '').includes('/') && !b.startsWith('(') ? `(${b})` : b;
   return `${wrap}|${label}⟩`;
+}
+
+/**
+ * Amplitudes (interleaved re/im) of the single-qubit state cos(θ/2)|0⟩ + e^{iφ}·sin(θ/2)|1⟩;
+ * φ = null (at a pole) counts as 0.
+ */
+export function qubitAmplitudes(theta: number, phi: number | null): number[] {
+  const a = Math.cos(theta / 2);
+  const b = Math.sin(theta / 2);
+  const p = phi ?? 0;
+  return [a, 0, b * Math.cos(p), b * Math.sin(p)];
 }
 
 export type KetOptions = {

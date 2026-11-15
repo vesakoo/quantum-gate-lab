@@ -112,18 +112,22 @@ describe('Bloch strip', () => {
     expect(within(panel).getByTestId('bloch-euler-mixed')).toHaveTextContent('no single |ψ⟩');
   });
 
-  it('the panel shows polar angles and the Euler form', () => {
-    // H then S: |i⟩
-    const c = placeGate(placeGate(emptyCircuit(), 'H', 0, 0), 'S', 1, 0);
+  it('the panel shows polar angles and the state in symbolic ket form', () => {
+    // H then S: |i⟩; then T: phase 3π/4
+    const c = placeGate(placeGate(placeGate(emptyCircuit(), 'H', 0, 0), 'S', 1, 0), 'T', 2, 0);
     history.replaceState(null, '', `/#${toHash(c)}`);
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'q[0] after step 2' }));
     const p = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] after step 2' }));
     expect(p.getByTestId('bloch-theta')).toHaveTextContent('π/2 (90.0°)');
     expect(p.getByTestId('bloch-phi')).toHaveTextContent('π/2 (90.0°)');
-    const euler = p.getByTestId('bloch-euler');
-    expect(euler).toHaveTextContent('|ψ⟩ = 0.707|0⟩ + eiπ/2·0.707|1⟩');
-    expect(euler.querySelector('sup')).toHaveTextContent('iπ/2');
+    expect(p.getByTestId('bloch-euler')).toHaveTextContent('|ψ⟩ = (|0⟩ + i|1⟩)/√2');
+
+    fireEvent.click(screen.getByRole('button', { name: 'q[0] after step 3' }));
+    const p3 = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] after step 3' }));
+    const euler = p3.getByTestId('bloch-euler');
+    expect(euler).toHaveTextContent('|ψ⟩ = (|0⟩ − e−iπ/4|1⟩)/√2');
+    expect(euler.querySelector('sup')).toHaveTextContent('−iπ/4');
 
     // input |0⟩: θ = 0, φ undefined at the pole
     fireEvent.click(screen.getByRole('button', { name: 'q[0] input' }));

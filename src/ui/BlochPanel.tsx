@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import type { Bloch } from '../sim/backend';
 import { blochLabel } from './BlochStrip';
 import type { BlochScene } from './blochScene';
-import { blochPolar, eulerState, withDegrees } from './polar';
+import { formatKet, qubitAmplitudes } from './ket';
+import { KetText } from './KetView';
+import { blochPolar, withDegrees } from './polar';
 
 type Props = {
   qubit: number;
@@ -97,10 +99,7 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
         </p>
       ) : (
         <p className="bloch-euler" data-testid="bloch-euler">
-          |ψ⟩ ={' '}
-          {eulerState(polar.theta ?? 0, polar.phi)
-            .split(/e\^\{(.+?)\}/)
-            .map((part, i) => (i % 2 === 1 ? <span key={i}>e<sup>{part}</sup></span> : part))}
+          |ψ⟩ = <KetText text={formatKet(qubitAmplitudes(polar.theta ?? 0, polar.phi), 1).text} />
         </p>
       )}
       <table className="bloch-probs">

@@ -9,7 +9,11 @@ import { StateVector } from '../../src/sim/statevector';
 import { gateMatrix } from '../../src/sim/gates';
 import App from '../../src/ui/App';
 import KetView from '../../src/ui/KetView';
-import { formatKet, symbolicSqrt } from '../../src/ui/ket';
+import { formatKet, qubitAmplitudes, symbolicSqrt } from '../../src/ui/ket';
+import { blochPolar } from '../../src/ui/polar';
+import { blochFrom } from '../../src/sim/backend';
+
+const PI = Math.PI;
 
 let uid = 0;
 const op = (gate: GateId, wires: number[], params: string[] = []): Op => ({ id: `k${uid++}`, gate, wires, params });
@@ -45,6 +49,38 @@ describe('symbolicSqrt', () => {
   it('returns null for a generic value', () => {
     expect(symbolicSqrt(Math.cos(0.5) ** 2)).toBeNull();
     expect(symbolicSqrt(0)).toBeNull();
+  });
+  it('only uses nice denominators', () => {
+    expect(symbolicSqrt(0.3)).toBeNull(); // not √30/10
+    expect(symbolicSqrt(0.7)).toBeNull();
+    expect(symbolicSqrt(5 / 49)).toBeNull();
+    expect(symbolicSqrt(5 / 12)).toEqual({ num: '√15', den: '6' });
+  });
+});
+
+describe('qubitAmplitudes (Bloch panel ket)', () => {
+  const s = (x: number, y: number, z: number) => {
+    const p = blochPolar(blochFrom(x, y, z));
+    return formatKet(qubitAmplitudes(p.theta!, p.phi), 1).text;
+  };
+  it('poles, |±⟩, |±i⟩', () => {
+    expect(s(0, 0, 1)).toBe('|0⟩');
+    expect(s(0, 0, -1)).toBe('|1⟩');
+    expect(s(1, 0, 0)).toBe('(|0⟩ + |1⟩)/√2');
+    expect(s(-1, 0, 0)).toBe('(|0⟩ − |1⟩)/√2');
+    expect(s(0, 1, 0)).toBe('(|0⟩ + i|1⟩)/√2');
+    expect(s(0, -1, 0)).toBe('(|0⟩ − i|1⟩)/√2');
+  });
+  it('known magnitudes and phases', () => {
+    // RY(π/3)|0⟩
+    expect(s(Math.sin(PI / 3), 0, Math.cos(PI / 3))).toBe('(√3/2)|0⟩ + (1/2)|1⟩');
+    // H then T
+    expect(s(Math.cos(PI / 4), Math.sin(PI / 4), 0)).toBe('(|0⟩ + e^{iπ/4}|1⟩)/√2');
+  });
+  it('other states fall back to decimals', () => {
+    expect(s(Math.sin(1), 0, Math.cos(1))).toBe('0.878|0⟩ + 0.479|1⟩');
+    expect(s(Math.cos(1), Math.sin(1), 0)).toBe('(|0⟩ + e^{i1.000}|1⟩)/√2');
+    expect(s(Math.cos(-1), Math.sin(-1), 0)).toBe('(|0⟩ + e^{−i1.000}|1⟩)/√2');
   });
 });
 
