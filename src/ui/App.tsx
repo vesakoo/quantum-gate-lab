@@ -9,7 +9,9 @@ import {
   removeOp, removeQubit, setParams, toggleInitial,
 } from '../model/edit';
 import AngleDialog from './AngleDialog';
-import CircuitGrid, { type Selection } from './CircuitGrid';
+import BlochPanel from './BlochPanel';
+import BlochStrip, { type BlochSel } from './BlochStrip';
+import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
 import Palette from './Palette';
 import { useCircuit } from './useCircuit';
@@ -35,6 +37,7 @@ export default function App() {
   const [selection, setSelection] = useState<Selection>(null);
   const [angleEdit, setAngleEdit] = useState<{ opId: string; isNew: boolean } | null>(null);
   const [dragging, setDragging] = useState<DragData | null>(null);
+  const [blochSel, setBlochSel] = useState<BlochSel | null>(null);
   // distance threshold keeps click (select) and double-click (edit angles) working
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -100,6 +103,14 @@ export default function App() {
     [dispatch],
   );
   const onEditAngles = useCallback((opId: string) => setAngleEdit({ opId, isNew: false }), []);
+  const onSelectBloch = useCallback((s: BlochSel) => setBlochSel(s), []);
+  const closeBloch = useCallback(() => setBlochSel(null), []);
+  // the panel follows the circuit; it closes if its qubit or step no longer exists
+  const panelBloch = blochSel ? (sim?.bloch[blochSel.s]?.[blochSel.qubit] ?? null) : null;
+  const panelValid = blochSel !== null && blochSel.qubit < circuit.numQubits && blochSel.s <= circuit.steps.length;
+  useEffect(() => {
+    if (blochSel && !panelValid) setBlochSel(null);
+  }, [blochSel, panelValid]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -144,40 +155,57 @@ export default function App() {
   })();
 
   return (
-    <main className="app">
-      <h1>Quantum Gate Lab</h1>
-      <DndContext
-        sensors={sensors}
-        collisionDetection={pointerWithin}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-        onDragCancel={() => setDragging(null)}
-      >
-        <Palette />
-        <CircuitGrid
-          circuit={circuit}
-          qubitP1={sim?.qubitP1 ?? null}
-          selection={selection}
-          onSelect={onSelect}
-          onToggleInitial={onToggleInitial}
-          onRemoveQubit={onRemoveQubit}
-          onEditAngles={onEditAngles}
-        />
-        <DragOverlay dropAnimation={null}>{overlay}</DragOverlay>
-      </DndContext>
-      <div className="grid-toolbar">
-        <button
-          type="button"
-          onClick={() => dispatch(addQubit)}
-          disabled={circuit.numQubits >= MAX_QUBITS}
+    <main className={`app${blochSel ? ' with-panel' : ''}`}>
+      <div className="app-main">
+        <h1>Quantum Gate Lab</h1>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragCancel={() => setDragging(null)}
         >
-          Add qubit
-        </button>
-        <span className="hint">
-          Drag gates onto the grid · drag off the grid to delete · click to select, Delete to remove · double-click an
-          angle gate to edit it
-        </span>
+          <Palette />
+          <CircuitGrid
+            circuit={circuit}
+            qubitP1={sim?.qubitP1 ?? null}
+            selection={selection}
+            onSelect={onSelect}
+            onToggleInitial={onToggleInitial}
+            onRemoveQubit={onRemoveQubit}
+            onEditAngles={onEditAngles}
+          >
+            {sim ? (
+              <BlochStrip
+                bloch={sim.bloch}
+                numQubits={circuit.numQubits}
+                numSteps={circuit.steps.length}
+                inW={IN_W}
+                outW={OUT_W}
+                selected={blochSel}
+                onSelect={onSelectBloch}
+              />
+            ) : null}
+          </CircuitGrid>
+          <DragOverlay dropAnimation={null}>{overlay}</DragOverlay>
+        </DndContext>
+        <div className="grid-toolbar">
+          <button
+            type="button"
+            onClick={() => dispatch(addQubit)}
+            disabled={circuit.numQubits >= MAX_QUBITS}
+          >
+            Add qubit
+          </button>
+          <span className="hint">
+            Drag gates onto the grid · drag off the grid to delete · click to select, Delete to remove · double-click an
+            angle gate to edit it
+          </span>
+        </div>
       </div>
+      {blochSel && panelValid && panelBloch ? (
+        <BlochPanel qubit={blochSel.qubit} step={blochSel.s} bloch={panelBloch} onClose={closeBloch} />
+      ) : null}
       {editing && angleEdit ? (
         <AngleDialog
           key={angleEdit.opId}

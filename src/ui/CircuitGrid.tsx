@@ -1,4 +1,4 @@
-import { memo, useCallback } from 'react';
+import { memo, useCallback, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { Circuit, Step } from '../model/circuit';
 import { COL_W, ControlView, GateView, ROW_H, isUnitary } from './GateView';
@@ -18,6 +18,8 @@ type Props = {
   onToggleInitial: (wire: number) => void;
   onRemoveQubit: (wire: number) => void;
   onEditAngles: (opId: string) => void;
+  /** Rendered under the grid inside the same horizontal scroller (the Bloch strip). */
+  children?: ReactNode;
 };
 
 const Cell = memo(function Cell({ step, wire }: { step: number; wire: number }) {
@@ -79,7 +81,7 @@ const StepColumn = memo(function StepColumn({
 });
 
 export default function CircuitGrid({
-  circuit, qubitP1, selection, onSelect, onToggleInitial, onRemoveQubit, onEditAngles,
+  circuit, qubitP1, selection, onSelect, onToggleInitial, onRemoveQubit, onEditAngles, children,
 }: Props) {
   const n = circuit.numQubits;
   const steps = circuit.steps;
@@ -161,6 +163,7 @@ export default function CircuitGrid({
           <OutColumn numQubits={n} qubitP1={qubitP1} />
         </div>
       </div>
+      {children}
     </div>
   );
 }

@@ -556,3 +556,250 @@ body {
 .dialog-buttons button {
   padding: 6px 14px;
 }
+
+/* ---------- Bloch strip ---------- */
+
+.bloch-strip {
+  display: grid;
+  width: max-content;
+  margin-top: 8px;
+  border: 1px solid var(--grid-border);
+  background: var(--panel);
+}
+
+.bloch-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bloch-cell.bloch-in {
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 10px;
+  border-right: 1px solid var(--grid-border);
+}
+
+.bloch-cell.bloch-in .strip-label {
+  margin-right: auto;
+  padding-left: 26px;
+}
+
+.strip-label::before {
+  content: attr(data-label);
+}
+
+.mini-bloch {
+  display: inline-flex;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mini-bloch:hover {
+  border-color: #b9c6d6;
+}
+
+.mini-bloch.selected {
+  border-color: var(--gate-dark);
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+}
+
+.mini-bloch:focus-visible {
+  outline: 2px solid var(--gate-dark);
+  outline-offset: 1px;
+}
+
+.mb-sphere {
+  fill: #eef4fb;
+  stroke: #4a6080;
+  stroke-width: 1;
+}
+
+.mb-equator {
+  fill: none;
+  stroke: #4a6080;
+  stroke-width: 0.8;
+  stroke-dasharray: 2 2;
+}
+
+.mb-arrow {
+  stroke: #d03030;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mb-tip {
+  fill: #d03030;
+}
+
+.mini-bloch.mixed .mb-sphere {
+  fill: #f6f0e6;
+  stroke-dasharray: 3 2;
+}
+
+/* ---------- Bloch panel ---------- */
+
+.app.with-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .app.with-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.app-main {
+  min-width: 0;
+}
+
+.bloch-panel {
+  position: sticky;
+  top: 12px;
+  border: 1px solid var(--grid-border);
+  background: var(--panel);
+  padding: 10px 14px 14px;
+  box-sizing: border-box;
+}
+
+.bloch-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bloch-panel-head h2 {
+  margin: 0;
+  font-size: 16px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+.bloch-close {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  border: 1px solid #ccd;
+  background: #fff;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.bloch3d {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  margin: 6px auto 0;
+}
+
+.bloch3d:empty {
+  display: none;
+}
+
+.bloch3d-canvas {
+  display: block;
+}
+
+.bloch3d-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  cursor: grab;
+}
+
+.bloch3d-label {
+  font-size: 13px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.bloch3d-label.axis {
+  font-style: italic;
+  font-weight: 700;
+  color: #555;
+}
+
+.bloch3d-label.state {
+  font-weight: 600;
+  color: #1f3c66;
+  background: rgba(255, 255, 255, 0.75);
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
+.bloch-hint {
+  margin: 4px 0 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.bloch-mixed {
+  margin: 0 0 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: #fbf3e3;
+  border-left: 3px solid var(--ctl-on);
+}
+
+.bloch-coords {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: 2px 10px;
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+
+.bloch-coords dt {
+  font-weight: 700;
+  font-style: italic;
+}
+
+.bloch-coords dd {
+  margin: 0;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+.bloch-probs {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.bloch-probs caption {
+  text-align: left;
+  font-size: 12px;
+  color: var(--muted);
+  padding-bottom: 4px;
+}
+
+.bloch-probs th {
+  text-align: left;
+  font-weight: 600;
+  width: 40px;
+  padding: 2px 0;
+}
+
+.bloch-probs .bar {
+  padding: 2px 8px;
+}
+
+.bloch-probs .bar span {
+  display: block;
+  height: 10px;
+  background: var(--cyan);
+  border: 1px solid #5bb;
+  box-sizing: border-box;
+}
+
+.bloch-probs .num {
+  text-align: right;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  white-space: nowrap;
+}

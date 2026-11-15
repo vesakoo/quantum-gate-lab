@@ -1,0 +1,110 @@
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import App from '../../src/ui/App';
+import { projectBloch } from '../../src/ui/MiniBloch';
+import { blochFrom } from '../../src/sim/backend';
+import { emptyCircuit } from '../../src/model/circuit';
+import { placeControl, placeGate } from '../../src/model/edit';
+import { toHash } from '../../src/model/serialize';
+
+beforeEach(() => {
+  history.replaceState(null, '', '/');
+});
+afterEach(cleanup);
+
+const close = (a: number, b: number) => expect(a).toBeCloseTo(b, 9);
+
+describe('projectBloch', () => {
+  const r = 20;
+  it('|0⟩ projects straight up', () => {
+    const p = projectBloch(blochFrom(0, 0, 1), r);
+    close(p.px, 0);
+    close(p.py, -r);
+  });
+  it('|i⟩ projects to the right', () => {
+    const p = projectBloch(blochFrom(0, 1, 0), r);
+    close(p.px, r);
+    close(p.py, 0);
+  });
+  it('|+⟩ projects down-left (toward the viewer)', () => {
+    const p = projectBloch(blochFrom(1, 0, 0), r);
+    close(p.px, -0.35 * r);
+    close(p.py, 0.35 * r);
+  });
+});
+
+describe('Bloch strip', () => {
+  it('renders an input sphere plus one per step for every qubit', () => {
+    render(<App />);
+    const strip = screen.getByRole('region', { name: 'Bloch spheres' });
+    const s = within(strip);
+    for (let q = 0; q < 4; q++) {
+      expect(s.getByRole('button', { name: `q[${q}] input` })).toBeInTheDocument();
+      for (let k = 1; k <= 12; k++) expect(s.getByRole('button', { name: `q[${q}] after step ${k}` })).toBeInTheDocument();
+      expect(s.getAllByRole('button', { name: new RegExp(`^q\\[${q}\\] `) })).toHaveLength(13);
+    }
+    expect(s.queryByRole('button', { name: 'q[4] input' })).not.toBeInTheDocument();
+  });
+
+  it('marks an entangled qubit as mixed', () => {
+    // H on q[0] at step 1, then CNOT q[0] -> q[1] at step 2: both qubits become maximally mixed
+    const c = placeControl(placeGate(placeGate(emptyCircuit(), 'H', 0, 0), 'X', 1, 1), 'on1', 1, 0);
+    history.replaceState(null, '', `/#${toHash(c)}`);
+    render(<App />);
+    const pure = screen.getByRole('button', { name: 'q[0] after step 1' });
+    expect(pure).not.toHaveClass('mixed');
+    for (const name of ['q[0] after step 2', 'q[1] after step 2', 'q[1] after step 12']) {
+      const m = screen.getByRole('button', { name });
+      expect(m).toHaveClass('mixed');
+      expect(m.getAttribute('title')).toContain('entangled / mixed');
+    }
+    expect(screen.getByRole('button', { name: 'q[2] after step 2' })).not.toHaveClass('mixed');
+  });
+
+  it('clicking a mini sphere opens the panel with the full numbers', () => {
+    const c = placeGate(emptyCircuit(), 'H', 2, 0);
+    history.replaceState(null, '', `/#${toHash(c)}`);
+    render(<App />);
+    expect(screen.queryByRole('complementary', { name: /Bloch sphere/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'q[0] after step 3' }));
+    const panel = screen.getByRole('complementary', { name: 'Bloch sphere q[0] after step 3' });
+    const p = within(panel);
+    expect(p.getByText('q[0] after step 3')).toBeInTheDocument();
+    expect(p.getByTestId('bloch-x')).toHaveTextContent('1.000');
+    expect(p.getByTestId('bloch-y')).toHaveTextContent('0.000');
+    expect(p.getByTestId('bloch-z')).toHaveTextContent('0.000');
+    expect(p.getByTestId('bloch-length')).toHaveTextContent('1.000');
+    const expected: [string, string][] = [
+      ['|0⟩', '50.0 %'],
+      ['|1⟩', '50.0 %'],
+      ['|+⟩', '100.0 %'],
+      ['|−⟩', '0.0 %'],
+      ['|i⟩', '50.0 %'],
+      ['|−i⟩', '50.0 %'],
+    ];
+    for (const [label, pct] of expected) {
+      expect(p.getByTestId(`prob-${label}`)).toHaveTextContent(label);
+      expect(p.getByTestId(`prob-${label}`)).toHaveTextContent(pct);
+    }
+    expect(p.queryByText('entangled / mixed')).not.toBeInTheDocument();
+
+    // the input sphere shows |0⟩
+    fireEvent.click(screen.getByRole('button', { name: 'q[0] input' }));
+    const panel2 = screen.getByRole('complementary', { name: 'Bloch sphere q[0] input' });
+    expect(within(panel2).getByTestId('prob-|0⟩')).toHaveTextContent('100.0 %');
+    expect(screen.getByRole('button', { name: 'q[0] input' })).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(within(panel2).getByRole('button', { name: 'Close Bloch panel' }));
+    expect(screen.queryByRole('complementary', { name: /Bloch sphere/ })).not.toBeInTheDocument();
+  });
+
+  it('the panel marks a mixed qubit and shows its shorter length', () => {
+    const c = placeControl(placeGate(placeGate(emptyCircuit(), 'H', 0, 0), 'X', 1, 1), 'on1', 1, 0);
+    history.replaceState(null, '', `/#${toHash(c)}`);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'q[1] after step 2' }));
+    const panel = screen.getByRole('complementary', { name: 'Bloch sphere q[1] after step 2' });
+    expect(within(panel).getByText('entangled / mixed')).toBeInTheDocument();
+    expect(within(panel).getByTestId('bloch-length')).toHaveTextContent('0.000');
+  });
+});
