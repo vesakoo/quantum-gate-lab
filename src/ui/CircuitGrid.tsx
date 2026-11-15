@@ -2,6 +2,7 @@ import { memo, useCallback, type ReactNode } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import type { Circuit, Step } from '../model/circuit';
 import { COL_W, ControlView, GateView, ROW_H, isUnitary } from './GateView';
+import { GRID_ID } from './drop';
 import OutColumn from './OutColumn';
 
 export type Selection = { kind: 'op'; id: string } | { kind: 'control'; step: number; wire: number } | null;
@@ -88,8 +89,11 @@ export default function CircuitGrid({
   // stable callbacks so memoized step columns only re-render when their step changes
   const onSelectOp = useCallback((id: string) => onSelect({ kind: 'op', id }), [onSelect]);
   const onSelectCtl = useCallback((step: number, wire: number) => onSelect({ kind: 'control', step, wire }), [onSelect]);
+  // the whole circuit area is a no-op drop target, so a drop on a step header, the In/Out
+  // columns or the Bloch strip does not count as "off the grid" (which deletes)
+  const { setNodeRef } = useDroppable({ id: GRID_ID });
   return (
-    <div className="circuit-scroll" onClick={() => onSelect(null)}>
+    <div ref={setNodeRef} className="circuit-scroll" onClick={() => onSelect(null)}>
       <div
         className="circuit"
         style={{

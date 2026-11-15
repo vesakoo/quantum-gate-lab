@@ -172,6 +172,38 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
   // two-qubit ops
   const top = centerY(lo);
   const span = centerY(hi) - top;
+  if (op.gate === 'B' && hi - lo > 1) {
+    // non-adjacent: two end boxes joined by a connector, so the wires in between stay visible
+    return (
+      <>
+        {sel}
+        <div
+          ref={d.ref}
+          {...d.props}
+          aria-label={name}
+          title={`${name} — the dot marks the H/control end`}
+          className={cls('connector')}
+          style={{ left: CX - 6, top, width: 12, height: span }}
+          onClick={select}
+        />
+        {op.wires.map((w, i) => (
+          <EndHandle
+            key={i}
+            op={op}
+            end={i as 0 | 1}
+            name={`B ${i === 0 ? 'control' : 'target'} end on q[${w}], step ${step + 1}`}
+            className={`gate b-end${controlled ? ' controlled' : ''}`}
+            style={{ left: CX - GATE / 2, top: centerY(w) - GATE / 2, width: GATE, height: GATE }}
+            onSelect={select}
+          >
+            <span className="gate-label">B</span>
+            {i === 0 ? <span className="b-grip role b-dot" aria-hidden="true" /> : null}
+          </EndHandle>
+        ))}
+      </>
+    );
+  }
+
   if (op.gate === 'B') {
     return (
       <>

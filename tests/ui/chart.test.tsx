@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../../src/ui/App';
 import ProbabilityChart, { basisLabel, visibleRows } from '../../src/ui/ProbabilityChart';
 
@@ -45,5 +45,36 @@ describe('Load', () => {
     fireEvent.change(input, { target: { files: [file] } });
     await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Invalid JSON'));
     expect(location.hash).toBe(before);
+  });
+  it('a file that cannot be read shows an error', async () => {
+    render(<App />);
+    const input = screen.getByLabelText('Load circuit file') as HTMLInputElement;
+    const file = new File(['x'], 'locked.json', { type: 'application/json' });
+    Object.defineProperty(file, 'text', { value: () => Promise.reject(new Error('NotReadableError')) });
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('Could not read locked.json'));
+  });
+});
+
+describe('Save', () => {
+  it('revokes the download URL only after a delay (Safari)', () => {
+    vi.useFakeTimers();
+    const create = vi.fn(() => 'blob:x');
+    const revoke = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    vi.stubGlobal('URL', Object.assign(Object.create(URL), { createObjectURL: create, revokeObjectURL: revoke }));
+    try {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(click).toHaveBeenCalledTimes(1);
+      expect(revoke).not.toHaveBeenCalled();
+      vi.runAllTimers();
+      expect(revoke).toHaveBeenCalledWith('blob:x');
+    } finally {
+      vi.unstubAllGlobals();
+      click.mockRestore();
+      vi.useRealTimers();
+    }
   });
 });

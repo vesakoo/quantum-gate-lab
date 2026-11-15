@@ -27,7 +27,15 @@ function pct(p: number): string {
   return `${s === '-0.0' ? '0.0' : s} %`;
 }
 
-export default function ProbabilityChart({ probabilities, numQubits }: { probabilities: number[]; numQubits: number }) {
+type Props = {
+  probabilities: number[];
+  /** Qubit count of the result the probabilities belong to (used for the basis labels). */
+  numQubits: number;
+  /** The result belongs to an older circuit (dimmed). */
+  stale?: boolean;
+};
+
+export default function ProbabilityChart({ probabilities, numQubits, stale = false }: Props) {
   const [hideZero, setHideZero] = useState(false);
   const rows = visibleRows(probabilities, hideZero);
   const plotH = rows.length * ROW;
@@ -35,7 +43,7 @@ export default function ProbabilityChart({ probabilities, numQubits }: { probabi
   const x = (v: number) => LEFT + (v / 100) * PLOT_W;
   const ticks = Array.from({ length: 11 }, (_, i) => i * 10);
   return (
-    <section className="prob-chart">
+    <section className={stale ? 'prob-chart stale' : 'prob-chart'} aria-busy={stale || undefined}>
       <header>
         <h2>Output probabilities</h2>
         <label>

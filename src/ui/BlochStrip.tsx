@@ -11,12 +11,15 @@ export const blochLabel = (qubit: number, s: number) => (s === 0 ? `q[${qubit}] 
 
 type Props = {
   bloch: Bloch[][];
+  /** Qubit count of the result in `bloch` (it may lag the circuit while the worker catches up). */
   numQubits: number;
   numSteps: number;
   inW: number;
   outW: number;
   selected: BlochSel | null;
   onSelect: (sel: BlochSel) => void;
+  /** The result belongs to an older circuit (dimmed). */
+  stale?: boolean;
 };
 
 /**
@@ -24,13 +27,14 @@ type Props = {
  * circuit grid (In column = input state, then one column per step) so they line up and
  * scroll together.
  */
-export default function BlochStrip({ bloch, numQubits, numSteps, inW, outW, selected, onSelect }: Props) {
+export default function BlochStrip({ bloch, numQubits, numSteps, inW, outW, selected, onSelect, stale = false }: Props) {
   // the result may briefly lag a structural edit while the worker catches up
   const cols = Math.min(numSteps + 1, bloch.length);
   const rows = Math.min(numQubits, bloch[0]?.length ?? 0);
   return (
     <section
-      className="bloch-strip"
+      className={stale ? 'bloch-strip stale' : 'bloch-strip'}
+      aria-busy={stale || undefined}
       aria-label="Bloch spheres"
       style={{
         gridTemplateColumns: `${inW}px repeat(${numSteps}, ${COL_W}px) ${outW}px`,

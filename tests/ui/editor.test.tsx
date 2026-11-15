@@ -1,9 +1,9 @@
-import { cleanup, render, screen, fireEvent, within } from '@testing-library/react';
+import { act, cleanup, render, screen, fireEvent, within } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import App from '../../src/ui/App';
 import AngleDialog from '../../src/ui/AngleDialog';
 import { emptyCircuit } from '../../src/model/circuit';
-import { placeGate } from '../../src/model/edit';
+import { moveOpEnd, placeGate } from '../../src/model/edit';
 import { toHash } from '../../src/model/serialize';
 
 beforeEach(() => {
@@ -75,6 +75,70 @@ describe('CircuitGrid', () => {
     fireEvent.keyDown(window, { key: 'Delete' });
     expect(screen.queryByRole('button', { name: 'H on q[0], step 3' })).not.toBeInTheDocument();
     expect(location.hash).not.toBe(`#${toHash(c)}`);
+  });
+});
+
+describe('B gate drawing', () => {
+  it('adjacent B is one block; non-adjacent B is two end boxes and a connector', () => {
+    const adj = placeGate(emptyCircuit(), 'B', 0, 0);
+    history.replaceState(null, '', `/#${toHash(adj)}`);
+    const first = render(<App />);
+    expect(first.container.querySelectorAll('.b-block')).toHaveLength(1);
+    expect(first.container.querySelectorAll('.b-end')).toHaveLength(0);
+    first.unmount();
+
+    const id = adj.steps[0].ops[0].id;
+    const far = moveOpEnd(adj, id, 1, 3);
+    expect(far.steps[0].ops[0].wires).toEqual([0, 3]);
+    history.replaceState(null, '', `/#${toHash(far)}`);
+    const { container } = render(<App />);
+    expect(container.querySelectorAll('.b-block')).toHaveLength(0);
+    const ends = container.querySelectorAll('.b-end');
+    expect(ends).toHaveLength(2);
+    expect(screen.getByLabelText('B control end on q[0], step 1').querySelector('.b-dot')).not.toBeNull();
+    expect(screen.getByLabelText('B target end on q[3], step 1').querySelector('.b-dot')).toBeNull();
+    expect(screen.getByRole('button', { name: 'B on q[0], q[3], step 1' }).classList.contains('connector')).toBe(true);
+  });
+});
+
+describe('URL hash', () => {
+  it('a bad hash shows an error and is kept until the first edit', () => {
+    history.replaceState(null, '', '/#garbage!!');
+    render(<App />);
+    expect(screen.getByRole('alert').textContent).toMatch(/Could not load the circuit from the link: Invalid hash encoding/);
+    expect(location.hash).toBe('#garbage!!');
+    expect(screen.getAllByRole('columnheader')).toHaveLength(12); // empty circuit shown
+    fireEvent.click(screen.getByLabelText('Initial state of q[0]'));
+    expect(location.hash).not.toBe('#garbage!!');
+    expect(location.hash.length).toBeGreaterThan(10);
+  });
+
+  it('a truncated hash shows the parse error', () => {
+    const c = placeGate(emptyCircuit(), 'H', 0, 0);
+    history.replaceState(null, '', `/#${toHash(c).slice(0, 30)}`);
+    render(<App />);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('a bad pasted hash shows an error and keeps the circuit', () => {
+    render(<App />);
+    fireEvent.click(screen.getByLabelText('Initial state of q[1]'));
+    const before = location.hash;
+    history.replaceState(null, '', '/#nope');
+    act(() => {
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect(screen.getByRole('alert').textContent).toMatch(/Could not load the circuit from the link/);
+    expect(screen.getByLabelText('Initial state of q[1]')).toHaveTextContent('|1⟩');
+    expect(before).not.toBe('#nope');
+  });
+
+  it('a valid hash loads without an error', () => {
+    const c = placeGate(emptyCircuit(), 'H', 0, 0);
+    history.replaceState(null, '', `/#${toHash(c)}`);
+    render(<App />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'H on q[0], step 1' })).toBeInTheDocument();
   });
 });
 

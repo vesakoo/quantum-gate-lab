@@ -372,6 +372,14 @@ body {
   box-shadow: 0 0 0 1.5px #fff;
 }
 
+/* H/control-end marker on the wires[0] box of a non-adjacent B (visual only) */
+.b-dot {
+  position: absolute;
+  left: -8px;
+  top: calc(50% - 7px);
+  pointer-events: none;
+}
+
 .barrier {
   z-index: 2;
   display: flex;
@@ -478,6 +486,33 @@ body {
 .hint {
   color: var(--muted);
   font-size: 12px;
+}
+
+/* shown while the worker runs; the delay keeps fast runs from flashing it */
+.computing {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0;
+  animation: computing-in 0.15s ease 0.25s forwards;
+}
+
+@keyframes computing-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* results from an older circuit (e.g. right after adding/removing a qubit) */
+.prob-chart,
+.bloch-strip {
+  transition: opacity 0.15s ease;
+}
+
+.prob-chart.stale,
+.bloch-strip.stale {
+  opacity: 0.45;
+  transition-delay: 0.25s;
 }
 
 .modal-backdrop {

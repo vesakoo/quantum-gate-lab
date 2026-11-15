@@ -10,20 +10,20 @@ function MeterIcon() {
   );
 }
 
-/** Per-qubit meter + output box: cyan fill = P(1), digit = most likely value. */
+/** Per-qubit meter + output box: cyan fill = P(1), digit = most likely value; blank without a result. */
 export default function OutColumn({ numQubits, qubitP1 }: { numQubits: number; qubitP1: number[] | null }) {
   return (
     <div className="out-column">
       {Array.from({ length: numQubits }, (_, q) => {
         const p = qubitP1?.[q] ?? 0;
-        const bit = p >= 0.5 - 1e-9 ? 1 : 0;
+        const bit = qubitP1 ? (p >= 0.5 - 1e-9 ? 1 : 0) : '';
         return (
           <div className="out-row" key={q} style={{ height: ROW_H }}>
             <MeterIcon />
             <div
               className="out-box"
               aria-label={`q[${q}] output`}
-              title={`q[${q}]: P(1) = ${(p * 100).toFixed(1)} %`}
+              title={qubitP1 ? `q[${q}]: P(1) = ${(p * 100).toFixed(1)} %` : `q[${q}]: computing`}
             >
               <div className="out-fill" style={{ width: `${p * 100}%` }} />
               <span className="out-digit">{bit}</span>

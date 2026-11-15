@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  DndContext, DragOverlay, PointerSensor, pointerWithin, useSensor, useSensors,
+  DndContext, DragOverlay, PointerSensor, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from '@dnd-kit/core';
 import { emptyCircuit, type Circuit, type Op } from '../model/circuit';
@@ -13,6 +13,7 @@ import AngleDialog from './AngleDialog';
 import BlochPanel from './BlochPanel';
 import BlochStrip, { type BlochSel } from './BlochStrip';
 import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
+import { dropTarget, gridCollision } from './drop';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
 import Palette from './Palette';
 import ProbabilityChart from './ProbabilityChart';
@@ -28,14 +29,11 @@ function locateOp(c: Circuit, id: string): { si: number; op: Op } | null {
   return null;
 }
 
-function parseCell(id: unknown): { step: number; wire: number } | null {
-  const m = typeof id === 'string' ? /^cell:(\d+):(\d+)$/.exec(id) : null;
-  return m ? { step: Number(m[1]), wire: Number(m[2]) } : null;
-}
-
 export default function App() {
-  const { circuit, dispatch, replace } = useCircuit();
-  const sim = useSimulation(circuit);
+  const { circuit, dispatch, replace, loadError } = useCircuit();
+  const { result: sim, computing } = useSimulation(circuit);
+  // the worker result may lag a structural edit; never pair it with the new circuit's labels
+  const simFresh = sim !== null && sim.numQubits === circuit.numQubits;
   const [selection, setSelection] = useState<Selection>(null);
   const [angleEdit, setAngleEdit] = useState<{ opId: string; isNew: boolean } | null>(null);
   const [dragging, setDragging] = useState<DragData | null>(null);
@@ -49,8 +47,10 @@ export default function App() {
     setDragging(null);
     const data = e.active.data.current as DragData | undefined;
     if (!data) return;
-    const cell = parseCell(e.over?.id);
-    // anything not dropped on a cell (the palette `trash` or off-grid) deletes grid items
+    const target = dropTarget(e.over?.id);
+    // step headers, In/Out columns and the Bloch strip are a no-op; the palette or off-grid deletes
+    if (target.kind === 'grid') return;
+    const cell = target.kind === 'cell' ? target : null;
     switch (data.type) {
       case 'palette': {
         if (!cell) return;
@@ -96,6 +96,10 @@ export default function App() {
   };
 
   const [ioError, setIoError] = useState<string | null>(null);
+  useEffect(() => {
+    // a link loaded from the URL hash (at start-up or pasted) reports its outcome in the banner
+    setIoError(loadError ? loadError.message : null);
+  }, [loadError]);
   const [copied, setCopied] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const onSave = () => {
@@ -104,13 +108,21 @@ export default function App() {
     a.href = url;
     a.download = 'circuit.json';
     a.click();
-    URL.revokeObjectURL(url);
+    // revoking synchronously can cancel the download in Safari
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const onLoadFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     e.target.value = '';
     if (!f) return;
-    const r = parseCircuit(await f.text());
+    let text: string;
+    try {
+      text = await f.text();
+    } catch {
+      setIoError(`Could not read ${f.name}`);
+      return;
+    }
+    const r = parseCircuit(text);
     if (r.ok) {
       replace(r.circuit);
       setIoError(null);
@@ -146,7 +158,7 @@ export default function App() {
   const onSelectBloch = useCallback((s: BlochSel) => setBlochSel(s), []);
   const closeBloch = useCallback(() => setBlochSel(null), []);
   // the panel follows the circuit; it closes if its qubit or step no longer exists
-  const panelBloch = blochSel ? (sim?.bloch[blochSel.s]?.[blochSel.qubit] ?? null) : null;
+  const panelBloch = blochSel && simFresh ? (sim.bloch[blochSel.s]?.[blochSel.qubit] ?? null) : null;
   const panelValid = blochSel !== null && blochSel.qubit < circuit.numQubits && blochSel.s <= circuit.steps.length;
   useEffect(() => {
     if (blochSel && !panelValid) setBlochSel(null);
@@ -200,7 +212,7 @@ export default function App() {
         <h1>Quantum Gate Lab</h1>
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={gridCollision}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
           onDragCancel={() => setDragging(null)}
@@ -208,7 +220,7 @@ export default function App() {
           <Palette />
           <CircuitGrid
             circuit={circuit}
-            qubitP1={sim?.qubitP1 ?? null}
+            qubitP1={simFresh ? sim.qubitP1 : null}
             selection={selection}
             onSelect={onSelect}
             onToggleInitial={onToggleInitial}
@@ -218,7 +230,8 @@ export default function App() {
             {sim ? (
               <BlochStrip
                 bloch={sim.bloch}
-                numQubits={circuit.numQubits}
+                numQubits={sim.numQubits}
+                stale={!simFresh}
                 numSteps={circuit.steps.length}
                 inW={IN_W}
                 outW={OUT_W}
@@ -241,6 +254,11 @@ export default function App() {
             Drag gates onto the grid · drag off the grid to delete · click to select, Delete to remove · double-click an
             angle gate to edit it
           </span>
+          {computing ? (
+            <span className="computing" role="status">
+              Computing…
+            </span>
+          ) : null}
         </div>
         <div className="io-toolbar">
           <button type="button" onClick={onSave}>Save</button>
@@ -257,7 +275,9 @@ export default function App() {
           <button type="button" onClick={onClear}>Clear</button>
           {ioError ? <span className="error" role="alert">{ioError}</span> : null}
         </div>
-        {sim ? <ProbabilityChart probabilities={sim.probabilities} numQubits={circuit.numQubits} /> : null}
+        {sim ? (
+          <ProbabilityChart probabilities={sim.probabilities} numQubits={sim.numQubits} stale={!simFresh || computing} />
+        ) : null}
       </div>
       {blochSel && panelValid && panelBloch ? (
         <BlochPanel qubit={blochSel.qubit} step={blochSel.s} bloch={panelBloch} onClose={closeBloch} />
