@@ -64,7 +64,12 @@ export function parseAngle(expr: string): number | null {
     return Number(m[0]);
   }
 
-  const v = expression();
+  let v: number | null;
+  try {
+    v = expression();
+  } catch {
+    return null; // e.g. RangeError (stack overflow) on pathologically deep nesting
+  }
   ws();
   if (v === null || i !== s.length || !Number.isFinite(v)) return null;
   return v;

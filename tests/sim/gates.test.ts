@@ -6,6 +6,69 @@ const g = (id: GateId, p: number[] = []) => gateMatrix(id, p);
 const ids = Object.keys(GATE_INFO) as GateId[];
 const sample = (id: GateId) => (id === 'U' ? [0.3, 1.1, -0.4] : GATE_INFO[id].params.length ? [0.7] : []);
 
+type Cx = [number, number];
+const re = (x: number): Cx => [x, 0];
+const im = (x: number): Cx => [0, x];
+const ex = (a: number): Cx => [Math.cos(a), Math.sin(a)]; // e^{ia}
+const sc = (k: number, [x, y]: Cx): Cx => [k * x, k * y];
+const _0 = re(0);
+const _1 = re(1);
+const r = Math.SQRT1_2;
+const th = 0.7; // sample angle for RX/RY/RZ/P
+const [ut, up, ul] = [0.3, 1.1, -0.4]; // sample U(θ, φ, λ)
+
+/** Expected matrices (row-major; for 2-qubit gates local index = 2·b(wires[0]) + b(wires[1])). */
+const EXPECTED: Record<string, { params: number[]; rows: Cx[][] }> = {
+  I: { params: [], rows: [[_1, _0], [_0, _1]] },
+  X: { params: [], rows: [[_0, _1], [_1, _0]] },
+  Y: { params: [], rows: [[_0, im(-1)], [im(1), _0]] },
+  Z: { params: [], rows: [[_1, _0], [_0, re(-1)]] },
+  H: { params: [], rows: [[re(r), re(r)], [re(r), re(-r)]] },
+  S: { params: [], rows: [[_1, _0], [_0, im(1)]] },
+  Sdg: { params: [], rows: [[_1, _0], [_0, im(-1)]] },
+  T: { params: [], rows: [[_1, _0], [_0, [r, r]]] },
+  Tdg: { params: [], rows: [[_1, _0], [_0, [r, -r]]] },
+  SX: { params: [], rows: [[[0.5, 0.5], [0.5, -0.5]], [[0.5, -0.5], [0.5, 0.5]]] },
+  SXdg: { params: [], rows: [[[0.5, -0.5], [0.5, 0.5]], [[0.5, 0.5], [0.5, -0.5]]] },
+  RX: { params: [th], rows: [[re(Math.cos(th / 2)), im(-Math.sin(th / 2))], [im(-Math.sin(th / 2)), re(Math.cos(th / 2))]] },
+  RY: { params: [th], rows: [[re(Math.cos(th / 2)), re(-Math.sin(th / 2))], [re(Math.sin(th / 2)), re(Math.cos(th / 2))]] },
+  RZ: { params: [th], rows: [[ex(-th / 2), _0], [_0, ex(th / 2)]] },
+  P: { params: [th], rows: [[_1, _0], [_0, ex(th)]] },
+  U: {
+    params: [ut, up, ul],
+    rows: [
+      [re(Math.cos(ut / 2)), sc(-Math.sin(ut / 2), ex(ul))],
+      [sc(Math.sin(ut / 2), ex(up)), sc(Math.cos(ut / 2), ex(up + ul))],
+    ],
+  },
+  SWAP: { params: [], rows: [[_1, _0, _0, _0], [_0, _0, _1, _0], [_0, _1, _0, _0], [_0, _0, _0, _1]] },
+  ISWAP: { params: [], rows: [[_1, _0, _0, _0], [_0, _0, im(1), _0], [_0, im(1), _0, _0], [_0, _0, _0, _1]] },
+  SQSWAP: {
+    params: [],
+    rows: [[_1, _0, _0, _0], [_0, [0.5, 0.5], [0.5, -0.5], _0], [_0, [0.5, -0.5], [0.5, 0.5], _0], [_0, _0, _0, _1]],
+  },
+  // CNOT(wires[0] → wires[1]) · (H on wires[0])
+  B: {
+    params: [],
+    rows: [
+      [re(r), _0, re(r), _0],
+      [_0, re(r), _0, re(r)],
+      [_0, re(r), _0, re(-r)],
+      [re(r), _0, re(-r), _0],
+    ],
+  },
+};
+
+describe('explicit gate matrices', () => {
+  it('covers every unitary gate', () => {
+    expect(Object.keys(EXPECTED).sort()).toEqual(ids.filter((i) => GATE_INFO[i].kind === 'unitary').sort());
+  });
+  it.each(Object.entries(EXPECTED))('%s matches its matrix', (id, { params, rows }) => {
+    const m = g(id as GateId, params);
+    expect(approxEqual(m, mat(rows)), id).toBe(true);
+  });
+});
+
 describe('gate library', () => {
   it('every unitary gate is unitary', () => {
     for (const id of ids.filter((i) => GATE_INFO[i].kind === 'unitary')) {

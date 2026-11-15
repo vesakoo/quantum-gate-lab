@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { emptyCircuit, type Circuit, type Op } from '../../src/model/circuit';
 import { simulate } from '../../src/sim/simulate';
-import type { GateId } from '../../src/sim/gates';
+import { GATE_INFO, type GateId } from '../../src/sim/gates';
+import { DensityMatrix } from '../../src/sim/density';
+import { StateVector } from '../../src/sim/statevector';
 
 let uid = 0;
 const op = (gate: GateId, wires: number[], params: string[] = []): Op => ({
@@ -80,5 +82,84 @@ describe('simulate', () => {
     const t0 = performance.now();
     simulate(c);
     expect(performance.now() - t0).toBeLessThan(50);
+  });
+  it('density timing: 10 qubits x 20 H steps with MEASURE at the last step', () => {
+    const c: Circuit = emptyCircuit(10, 20);
+    c.steps.forEach((s, k) => {
+      s.ops = Array.from({ length: 10 }, (_, q) => op(k === 19 && q === 0 ? 'MEASURE' : 'H', [q]));
+    });
+    expect(simulate(c).backend).toBe('density');
+    const t0 = performance.now();
+    simulate(c);
+    expect(performance.now() - t0).toBeLessThan(300);
+  });
+
+  it('hybrid path matches the pure density backend', () => {
+    let seed = 12345;
+    const rnd = () => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff;
+    };
+    const unitary = (Object.keys(GATE_INFO) as GateId[]).filter((g) => GATE_INFO[g].kind === 'unitary');
+    const build = (measureAt: number[]): Circuit => {
+      const n = 4;
+      const c = emptyCircuit(n, 12);
+      c.initial = [1, 0, 1, 0];
+      c.steps.forEach((s, k) => {
+        const free = [0, 1, 2, 3].sort(() => rnd() - 0.5);
+        if (measureAt.includes(k)) {
+          s.ops.push(op(k % 2 ? 'RESET' : 'MEASURE', [free.pop()!]));
+          s.ops.push(op('MEASURE', [free.pop()!]));
+        } else {
+          const ctl = free.pop()!;
+          s.controls = rnd() < 0.5 ? [{ wire: ctl, kind: rnd() < 0.5 ? 'on1' : 'on0' }] : [];
+        }
+        while (free.length) {
+          const g = unitary[Math.floor(rnd() * unitary.length)];
+          const ar = GATE_INFO[g].arity;
+          if (ar > free.length) continue;
+          const wires = Array.from({ length: ar }, () => free.pop()!);
+          const params = g === 'U' ? ['0.3', '1.1', '-0.4'] : GATE_INFO[g].params.map(() => String(rnd() * 6));
+          s.ops.push(op(g, wires, params));
+        }
+      });
+      return c;
+    };
+    for (const measureAt of [[5], [11], [3, 11]]) {
+      const c = build(measureAt);
+      const h = simulate(c);
+      const d = simulate(c, { hybrid: false });
+      expect(h.backend).toBe('density');
+      expect(d.backend).toBe('density');
+      expect(h.bloch.length).toBe(d.bloch.length);
+      h.probabilities.forEach((p, i) => expect(p).toBeCloseTo(d.probabilities[i], 9));
+      h.bloch.forEach((row, s) =>
+        row.forEach((b, q) => {
+          expect(b.x).toBeCloseTo(d.bloch[s][q].x, 9);
+          expect(b.y).toBeCloseTo(d.bloch[s][q].y, 9);
+          expect(b.z).toBeCloseTo(d.bloch[s][q].z, 9);
+        }),
+      );
+    }
+  });
+
+  it('DensityMatrix.fromStateVector equals |psi><psi|', () => {
+    const sv = new StateVector(2, [0, 1]);
+    const dm = new DensityMatrix(2, [0, 1]);
+    const h = { dim: 2, data: new Float64Array([Math.SQRT1_2, 0, Math.SQRT1_2, 0, Math.SQRT1_2, 0, -Math.SQRT1_2, 0]) };
+    const s = { dim: 2, data: new Float64Array([1, 0, 0, 0, 0, 0, 0, 1]) };
+    for (const b of [sv, dm]) {
+      b.applyGate(h, [0], []);
+      b.applyGate(s, [0], []);
+      b.applyGate(h, [1], [{ wire: 0, kind: 'on1' }]);
+    }
+    const conv = DensityMatrix.fromStateVector(sv);
+    for (let q = 0; q < 2; q++) {
+      const a = conv.bloch(q), b = dm.bloch(q);
+      expect(a.x).toBeCloseTo(b.x, 12);
+      expect(a.y).toBeCloseTo(b.y, 12);
+      expect(a.z).toBeCloseTo(b.z, 12);
+    }
+    Array.from(conv.probabilities()).forEach((p, i) => expect(p).toBeCloseTo(dm.probabilities()[i], 12));
   });
 });

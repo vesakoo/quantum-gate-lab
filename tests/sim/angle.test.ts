@@ -14,4 +14,9 @@ describe('parseAngle', () => {
   it('rejects invalid input', () => {
     for (const s of ['', 'abc', 'pi pi', '2**3', 'alert(1)', '(pi']) expect(parseAngle(s), s).toBeNull();
   });
+  it('returns null instead of overflowing the stack on deep nesting', () => {
+    const deep = '('.repeat(100000) + '1' + ')'.repeat(100000);
+    expect(() => parseAngle(deep)).not.toThrow();
+    expect(parseAngle(deep)).toBeNull();
+  });
 });

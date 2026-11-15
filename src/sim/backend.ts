@@ -100,6 +100,22 @@ export function applyGroups(
   const md = m.data;
   const sgn = conj ? -1 : 1;
   const { bases, offsets } = plan;
+  if (d === 2) {
+    // fast path for single-target gates
+    const m00r = md[0], m00i = sgn * md[1], m01r = md[2], m01i = sgn * md[3];
+    const m10r = md[4], m10i = sgn * md[5], m11r = md[6], m11i = sgn * md[7];
+    const o1 = offsets[1] * stride;
+    for (let g = 0; g < bases.length; g++) {
+      const p0 = start + bases[g] * stride;
+      const p1 = p0 + o1;
+      const ar = buf[p0], ai = buf[p0 + 1], br = buf[p1], bi = buf[p1 + 1];
+      buf[p0] = m00r * ar - m00i * ai + m01r * br - m01i * bi;
+      buf[p0 + 1] = m00r * ai + m00i * ar + m01r * bi + m01i * br;
+      buf[p1] = m10r * ar - m10i * ai + m11r * br - m11i * bi;
+      buf[p1 + 1] = m10r * ai + m10i * ar + m11r * bi + m11i * br;
+    }
+    return;
+  }
   for (let g = 0; g < bases.length; g++) {
     const base = bases[g];
     for (let l = 0; l < d; l++) {

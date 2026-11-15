@@ -1,8 +1,58 @@
 import type { Mat } from './complex';
 import {
   applyGroups, bitMask, blochFrom, initialIndex, planGate,
-  type Backend, type Bloch, type Control,
+  type Backend, type Bloch, type Control, type GatePlan,
 } from './backend';
+import type { StateVector } from './statevector';
+
+/**
+ * ρ → (U on the row index) ρ, i.e. applyGroups on every column, but looping column-innermost so
+ * the d rows of each group are read contiguously (a strided column walk is cache-hostile).
+ */
+function applyLeft(rho: Float64Array, D: number, plan: GatePlan, m: Mat, scratch: Float64Array): void {
+  const d = m.dim;
+  const md = m.data;
+  const { bases, offsets } = plan;
+  if (d === 2) {
+    const m00r = md[0], m00i = md[1], m01r = md[2], m01i = md[3];
+    const m10r = md[4], m10i = md[5], m11r = md[6], m11i = md[7];
+    for (let g = 0; g < bases.length; g++) {
+      const r0 = 2 * (bases[g] + offsets[0]) * D;
+      const r1 = 2 * (bases[g] + offsets[1]) * D;
+      for (let c2 = 0; c2 < 2 * D; c2 += 2) {
+        const ar = rho[r0 + c2], ai = rho[r0 + c2 + 1], br = rho[r1 + c2], bi = rho[r1 + c2 + 1];
+        rho[r0 + c2] = m00r * ar - m00i * ai + m01r * br - m01i * bi;
+        rho[r0 + c2 + 1] = m00r * ai + m00i * ar + m01r * bi + m01i * br;
+        rho[r1 + c2] = m10r * ar - m10i * ai + m11r * br - m11i * bi;
+        rho[r1 + c2 + 1] = m10r * ai + m10i * ar + m11r * bi + m11i * br;
+      }
+    }
+    return;
+  }
+  const rowStart = new Int32Array(d);
+  for (let g = 0; g < bases.length; g++) {
+    for (let l = 0; l < d; l++) rowStart[l] = 2 * (bases[g] + offsets[l]) * D;
+    for (let c2 = 0; c2 < 2 * D; c2 += 2) {
+      for (let l = 0; l < d; l++) {
+        scratch[2 * l] = rho[rowStart[l] + c2];
+        scratch[2 * l + 1] = rho[rowStart[l] + c2 + 1];
+      }
+      for (let r = 0; r < d; r++) {
+        let re = 0;
+        let im = 0;
+        const row = 2 * r * d;
+        for (let k = 0; k < d; k++) {
+          const ar = md[row + 2 * k], ai = md[row + 2 * k + 1];
+          const br = scratch[2 * k], bi = scratch[2 * k + 1];
+          re += ar * br - ai * bi;
+          im += ar * bi + ai * br;
+        }
+        rho[rowStart[r] + c2] = re;
+        rho[rowStart[r] + c2 + 1] = im;
+      }
+    }
+  }
+}
 
 /** Mixed-state backend: 2^n × 2^n complex density matrix, row-major, interleaved re/im. */
 export class DensityMatrix implements Backend {
@@ -18,12 +68,30 @@ export class DensityMatrix implements Backend {
     this.rho[2 * (i * this.dim + i)] = 1;
   }
 
+  /** Pure state |ψ⟩⟨ψ|: ρ[r][c] = ψ[r]·conj(ψ[c]). */
+  static fromStateVector(sv: StateVector): DensityMatrix {
+    const dm = new DensityMatrix(sv.n, new Array<0 | 1>(sv.n).fill(0));
+    const a = sv.amplitudes();
+    const D = dm.dim;
+    const p = dm.rho;
+    for (let r = 0; r < D; r++) {
+      const ar = a[2 * r], ai = a[2 * r + 1];
+      for (let c = 0; c < D; c++) {
+        const br = a[2 * c], bi = a[2 * c + 1];
+        const k = 2 * (r * D + c);
+        p[k] = ar * br + ai * bi;
+        p[k + 1] = ai * br - ar * bi;
+      }
+    }
+    return dm;
+  }
+
   /** ρ → CU ρ CU†: U on each column (row index varies), then conj(U) on each row. */
   applyGate(m: Mat, targets: number[], controls: Control[]): void {
     const plan = planGate(this.n, targets, controls);
     const scratch = new Float64Array(2 * m.dim);
     const D = this.dim;
-    for (let c = 0; c < D; c++) applyGroups(this.rho, 2 * c, 2 * D, plan, m, false, scratch);
+    applyLeft(this.rho, D, plan, m, scratch);
     for (let r = 0; r < D; r++) applyGroups(this.rho, 2 * r * D, 2, plan, m, true, scratch);
   }
 

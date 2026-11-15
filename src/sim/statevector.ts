@@ -20,6 +20,11 @@ export class StateVector implements Backend {
     applyGroups(this.amp, 0, 2, planGate(this.n, targets, controls), m, false, scratch);
   }
 
+  /** Copy of the amplitudes, interleaved re/im (index i at [2i], [2i+1]). */
+  amplitudes(): Float64Array {
+    return this.amp.slice();
+  }
+
   measure(_q: number): void {
     throw new Error('use DensityMatrix');
   }
