@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { emptyCircuit, type Circuit } from '../../src/model/circuit';
+import { normalizeSteps } from '../../src/model/edit';
 import { toJSON, parseCircuit, toHash, fromHash } from '../../src/model/serialize';
 
 function reference(): Circuit {
@@ -21,9 +22,10 @@ describe('serialize', () => {
   it('round-trips JSON and hash (unicode)', () => {
     const c = reference();
     const j = parseCircuit(toJSON(c));
-    expect(j.ok && j.circuit).toEqual(c);
+    // loaded circuits are normalised (one empty trailing step after the last used one)
+    expect(j.ok && j.circuit).toEqual(normalizeSteps(c));
     const h = fromHash(toHash(c));
-    expect(h.ok && h.circuit).toEqual(c);
+    expect(h.ok && h.circuit).toEqual(normalizeSteps(c));
     expect(toHash(c)).toMatch(/^[A-Za-z0-9_-]*$/);
   });
   const bad = (r: any) => { expect(r.ok).toBe(false); expect(r.error.length).toBeGreaterThan(0); };
@@ -42,5 +44,22 @@ describe('serialize', () => {
     bad(mod(c => { c.numQubits = 11; }));
     bad(mod(c => { c.initial = [0, 0]; }));
     bad(mod(c => { c.steps[0].ops = [{ id: 'a', gate: 'X', wires: [0], params: [] }]; })); // duplicate id 'a'
+  });
+  it('normalises loaded steps and caps their number', () => {
+    const empty = parseCircuit(JSON.stringify({ numQubits: 2, initial: [0, 0], steps: [] }));
+    expect(empty.ok && empty.circuit.steps.length).toBe(12);
+    const long = emptyCircuit(2, 40);
+    const trimmed = parseCircuit(toJSON(long));
+    expect(trimmed.ok && trimmed.circuit.steps.length).toBe(12);
+    bad(parseCircuit(toJSON(emptyCircuit(2, 501))));
+    const max = parseCircuit(toJSON(emptyCircuit(2, 500)));
+    expect(max.ok).toBe(true);
+  });
+  it('rejects over-long angle parameters', () => {
+    const c = emptyCircuit(1, 12);
+    c.steps[0].ops = [{ id: 'r', gate: 'RX', wires: [0], params: ['('.repeat(5000) + '1' + ')'.repeat(5000)] }];
+    bad(parseCircuit(toJSON(c)));
+    c.steps[0].ops[0].params = ['pi/' + '1'.repeat(197)]; // 200 chars is allowed
+    expect(parseCircuit(toJSON(c)).ok).toBe(true);
   });
 });

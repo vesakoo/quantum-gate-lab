@@ -1,7 +1,10 @@
 import { GATE_INFO, type GateId } from '../sim/gates';
 import type { Circuit, Op, Step } from './circuit';
+import { normalizeSteps } from './edit';
 
 const MAX_QUBITS = 10;
+export const MAX_STEPS = 500;
+export const MAX_PARAM_LENGTH = 200;
 
 export type ParseResult = { ok: true; circuit: Circuit } | { ok: false; error: string };
 
@@ -26,6 +29,7 @@ export function parseCircuit(text: string): ParseResult {
   if (!Array.isArray(initial) || initial.length !== numQubits || initial.some((b) => b !== 0 && b !== 1))
     return fail('initial must be an array of 0/1, one per qubit');
   if (!Array.isArray(steps)) return fail('steps must be an array');
+  if (steps.length > MAX_STEPS) return fail(`At most ${MAX_STEPS} steps are supported`);
 
   const ids = new Set<string>();
   const outSteps: Step[] = [];
@@ -53,6 +57,8 @@ export function parseCircuit(text: string): ParseResult {
       }
       if (!Array.isArray(params) || params.length !== info.params.length || params.some((p) => typeof p !== 'string'))
         return fail(`Step ${si}: ${gate} needs ${info.params.length} string param(s)`);
+      if (params.some((p: string) => p.length > MAX_PARAM_LENGTH))
+        return fail(`Step ${si}: angle parameters are limited to ${MAX_PARAM_LENGTH} characters`);
       if (info.kind !== 'unitary') nonUnitary = true;
       ops.push({ id, gate: gate as GateId, wires: wires.slice(), params: params.slice() });
     }
@@ -68,7 +74,8 @@ export function parseCircuit(text: string): ParseResult {
     if (nonUnitary && controls.length > 0) return fail(`Step ${si}: controls cannot share a step with measure/reset/barrier`);
     outSteps.push({ ops, controls });
   }
-  return { ok: true, circuit: { numQubits, initial: initial.slice() as (0 | 1)[], steps: outSteps } };
+  // every loaded circuit (file or URL hash) gets the editor's step invariants
+  return { ok: true, circuit: normalizeSteps({ numQubits, initial: initial.slice() as (0 | 1)[], steps: outSteps }) };
 }
 
 export function toHash(c: Circuit): string {
