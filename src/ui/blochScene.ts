@@ -101,9 +101,12 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
     scene.add(m);
   }
 
-  // Solid shaft + cone (WebGL lines are always 1 px), unlit and drawn last without depth test,
-  // so neither the translucent sphere nor an axis line can hide or dim it.
-  const arrowMat = track(new THREE.MeshBasicMaterial({ color: ARROW, depthTest: false }));
+  // Solid shaft + cone (WebGL lines are always 1 px), unlit and without depth test. three.js draws
+  // opaque objects before transparent ones and sorts by renderOrder only within each list, so the
+  // arrow is flagged transparent (at full opacity) to land after the translucent sphere and circles.
+  const arrowMat = track(
+    new THREE.MeshBasicMaterial({ color: ARROW, transparent: true, opacity: 1, depthTest: false, depthWrite: false }),
+  );
   const shaftGeo = track(new THREE.CylinderGeometry(0.025, 0.025, 1, 16));
   shaftGeo.translate(0, 0.5, 0);
   const headGeo = track(new THREE.ConeGeometry(0.07, 1, 20));
@@ -156,7 +159,8 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
         const h = Math.min(0.18, len * 0.45);
         shaft.scale.set(1, len - h, 1);
         head.position.y = len - h;
-        head.scale.set(1, h, 1);
+        const w = Math.min(1, h / 0.18); // narrow the cone with its length, as ArrowHelper did
+        head.scale.set(w, h, w);
       }
       render();
     },
