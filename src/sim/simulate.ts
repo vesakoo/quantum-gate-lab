@@ -5,6 +5,18 @@ import { DensityMatrix } from './density';
 import { GATE_INFO, gateMatrix } from './gates';
 import { StateVector } from './statevector';
 
+/** An op the simulator could not apply; it was skipped (acts as the identity). */
+export type SimWarning = {
+  opId: string;
+  /** 0-based step index (the UI shows step + 1). */
+  step: number;
+  gate: Op['gate'];
+  wires: number[];
+  /** The parameter expression that did not parse. */
+  param: string;
+  message: string;
+};
+
 export type SimResult = {
   /** Qubit count of the simulated circuit (results may lag behind the edited circuit). */
   numQubits: number;
@@ -19,6 +31,8 @@ export type SimResult = {
   amplitudes: number[] | null;
   /** Tr(ρ²) of the final state: 1 when pure. */
   purity: number;
+  /** Ops that were skipped, e.g. because an angle does not parse. Empty when everything ran. */
+  warnings: SimWarning[];
 };
 
 function snapshot(b: Backend): Bloch[] {
@@ -41,8 +55,10 @@ export function simulate(c: Circuit, { hybrid = true }: { hybrid?: boolean } = {
   const needsDensity = c.steps.some((s) => s.ops.some(isNonUnitary));
   let backend: Backend = needsDensity && !hybrid ? new DensityMatrix(n, c.initial) : new StateVector(n, c.initial);
   const bloch: Bloch[][] = [snapshot(backend)];
+  const warnings: SimWarning[] = [];
 
-  for (const step of c.steps) {
+  for (let si = 0; si < c.steps.length; si++) {
+    const step = c.steps[si];
     // A step with measure/reset has no controls and disjoint wires, so its unitaries commute with
     // the measure/reset: apply them first, while the (cheaper) state vector may still be in use.
     const ops = step.ops.some(isNonUnitary)
@@ -57,16 +73,26 @@ export function simulate(c: Circuit, { hybrid = true }: { hybrid?: boolean } = {
         else backend.reset(op.wires[0]);
       } else {
         const params: number[] = [];
-        let ok = true;
+        let bad: string | null = null;
         for (const expr of op.params) {
           const v = parseAngle(expr);
           if (v === null) {
-            ok = false;
+            bad = expr;
             break;
           }
           params.push(v);
         }
-        if (!ok) continue;
+        if (bad !== null) {
+          warnings.push({
+            opId: op.id,
+            step: si,
+            gate: op.gate,
+            wires: op.wires.slice(),
+            param: bad,
+            message: `invalid angle "${bad}"; the gate was skipped`,
+          });
+          continue;
+        }
         backend.applyGate(gateMatrix(op.gate, params), op.wires, step.controls);
       }
     }
@@ -94,5 +120,6 @@ export function simulate(c: Circuit, { hybrid = true }: { hybrid?: boolean } = {
     backend: needsDensity ? 'density' : 'statevector',
     amplitudes,
     purity,
+    warnings,
   };
 }
