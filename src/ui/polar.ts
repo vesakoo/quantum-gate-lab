@@ -43,3 +43,22 @@ export function formatRadians(rad: number): string {
 export function withDegrees(rad: number): string {
   return `${formatRadians(rad)} (${((rad * 180) / Math.PI).toFixed(1)}°)`;
 }
+
+export type EulerRow = { name: 'α' | 'β'; polar: string; rect: string };
+
+const ZERO = 5e-4;
+const num = (v: number) => (Math.abs(v) < ZERO ? 0 : v);
+const dec = (v: number) => Math.abs(num(v)).toFixed(3);
+
+function eulerRow(name: EulerRow['name'], r: number, phase: number): EulerRow {
+  const re = num(r * Math.cos(phase));
+  const im = num(r * Math.sin(phase));
+  const polar = r < ZERO ? '0' : `${r.toFixed(3)}·e^{i${formatRadians(phase)}}`;
+  const rect = `${re < 0 ? '−' : ''}${dec(re)} ${im < 0 ? '−' : '+'} ${dec(im)}i`;
+  return { name, polar, rect };
+}
+
+/** Qubit amplitudes α = cos(θ/2), β = e^{iφ}·sin(θ/2) (global phase dropped) as r·e^{iφ} and Re + i·Im. */
+export function eulerRows(theta: number, phi: number | null): EulerRow[] {
+  return [eulerRow('α', Math.cos(theta / 2), 0), eulerRow('β', Math.sin(theta / 2), phi ?? 0)];
+}

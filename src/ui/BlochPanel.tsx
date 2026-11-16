@@ -4,7 +4,7 @@ import { blochLabel } from './BlochStrip';
 import type { BlochScene } from './blochScene';
 import { formatKet, qubitAmplitudes } from './ket';
 import { KetText } from './KetView';
-import { blochPolar, withDegrees } from './polar';
+import { blochPolar, eulerRows, withDegrees } from './polar';
 
 type Props = {
   qubit: number;
@@ -98,9 +98,36 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
           mixed state (r = {fmt(polar.r)}): no single |ψ⟩; θ and φ give the arrow&apos;s direction
         </p>
       ) : (
-        <p className="bloch-euler" data-testid="bloch-euler">
-          |ψ⟩ = <KetText text={formatKet(qubitAmplitudes(polar.theta ?? 0, polar.phi), 1).text} />
-        </p>
+        <>
+          <p className="bloch-euler" data-testid="bloch-euler-formula">
+            |ψ⟩ = <KetText text="cos(θ/2)|0⟩ + e^{iφ}·sin(θ/2)|1⟩" />
+          </p>
+          <table className="bloch-euler-table" data-testid="bloch-euler-table">
+            <thead>
+              <tr>
+                <td />
+                <th scope="col">
+                  <KetText text="r·e^{iφ}" />
+                </th>
+                <th scope="col">Re + i·Im</th>
+              </tr>
+            </thead>
+            <tbody>
+              {eulerRows(polar.theta ?? 0, polar.phi).map((row) => (
+                <tr key={row.name} data-testid={`euler-${row.name}`}>
+                  <th scope="row">{row.name}</th>
+                  <td>
+                    <KetText text={row.polar} />
+                  </td>
+                  <td>{row.rect}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="bloch-euler" data-testid="bloch-euler">
+            |ψ⟩ = <KetText text={formatKet(qubitAmplitudes(polar.theta ?? 0, polar.phi), 1).text} />
+          </p>
+        </>
       )}
       <table className="bloch-probs">
         <caption>Measurement probabilities</caption>

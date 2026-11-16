@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { blochFrom } from '../../src/sim/backend';
-import { blochPolar, formatRadians, withDegrees } from '../../src/ui/polar';
+import { blochPolar, eulerRows, formatRadians, withDegrees } from '../../src/ui/polar';
 
 const PI = Math.PI;
 
@@ -56,5 +56,37 @@ describe('blochPolar', () => {
     expect(p.r).toBeCloseTo(0.5, 9);
     expect(p.theta).toBeCloseTo(PI / 2, 9);
     expect(p.phi).toBeCloseTo(PI / 2, 9);
+  });
+});
+
+describe('eulerRows', () => {
+  const rows = (t: number, p: number | null) => eulerRows(t, p).map((r) => [r.name, r.polar, r.rect]);
+  it('θ = π/2, φ = π/4', () => {
+    expect(rows(PI / 2, PI / 4)).toEqual([
+      ['α', '0.707·e^{i0}', '0.707 + 0.000i'],
+      ['β', '0.707·e^{iπ/4}', '0.500 + 0.500i'],
+    ]);
+  });
+  it('negative real part at φ = 3π/4', () => {
+    expect(eulerRows(PI / 2, (3 * PI) / 4)[1].rect).toBe('−0.500 + 0.500i');
+  });
+  it('negative imaginary part at φ = 3π/2', () => {
+    expect(eulerRows(PI / 2, (3 * PI) / 2)[1]).toMatchObject({ polar: '0.707·e^{i3π/2}', rect: '0.000 − 0.707i' });
+  });
+  it('poles: zero amplitude prints 0', () => {
+    expect(rows(0, null)).toEqual([
+      ['α', '1.000·e^{i0}', '1.000 + 0.000i'],
+      ['β', '0', '0.000 + 0.000i'],
+    ]);
+    expect(rows(PI, null)).toEqual([
+      ['α', '0', '0.000 + 0.000i'],
+      ['β', '1.000·e^{i0}', '1.000 + 0.000i'],
+    ]);
+  });
+  it('decimal phase off the π/12 grid', () => {
+    expect(eulerRows(PI / 2, 1)[1].polar).toBe('0.707·e^{i1.000}');
+  });
+  it('never prints −0.000', () => {
+    for (const p of [0, PI / 2, PI, (3 * PI) / 2]) for (const r of eulerRows(PI / 2, p)) expect(r.rect).not.toMatch(/−0\.000/);
   });
 });
