@@ -955,3 +955,42 @@ body {
   font-size: 12px;
   color: #666;
 }
+
+/* an angle that does not parse: the simulator skips the gate */
+.step-column .gate.invalid,
+.gate.invalid {
+  background: #fde7ea;
+  border-color: #b00020;
+  color: #b00020;
+  box-shadow: 0 0 0 2px #b00020;
+}
+
+.sim-warnings {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid #b00020;
+  border-radius: 4px;
+  background: #fff5f6;
+  color: #7a0016;
+  font-size: 13px;
+}
+
+.sim-warnings ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.sim-warnings li {
+  margin: 2px 0;
+}
+
+.sim-warnings code {
+  background: #fde7ea;
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+.sim-warnings button {
+  margin-left: 6px;
+  font-size: 12px;
+}

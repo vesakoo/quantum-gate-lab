@@ -261,6 +261,25 @@ export default function App() {
             </span>
           ) : null}
         </div>
+        {simFresh && sim.warnings.length > 0 ? (
+          <div className="sim-warnings" role="alert">
+            <strong>
+              {sim.warnings.length === 1 ? '1 gate was' : `${sim.warnings.length} gates were`} skipped (treated as
+              identity):
+            </strong>
+            <ul>
+              {sim.warnings.map((w) => (
+                <li key={w.opId}>
+                  Step {w.step + 1}, {opLabel({ gate: w.gate, params: [] }).label} on{' '}
+                  {w.wires.map((q) => `q[${q}]`).join(', ')}: invalid angle <code>{w.param}</code>{' '}
+                  <button type="button" onClick={() => onEditAngles(w.opId)}>
+                    Fix…
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="io-toolbar">
           <button type="button" onClick={onSave}>Save</button>
           <button type="button" onClick={() => fileRef.current?.click()}>Load</button>

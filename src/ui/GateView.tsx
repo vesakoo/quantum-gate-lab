@@ -1,6 +1,7 @@
 import { memo, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { ControlKind, Op } from '../model/circuit';
+import { parseAngle } from '../sim/angle';
 import { GATE_INFO, type GateId } from '../sim/gates';
 
 /** Grid geometry (px). Shared with the grid, the Out column and later the Bloch strip. */
@@ -28,6 +29,9 @@ export function opLabel(op: Pick<Op, 'gate' | 'params'>): { label: string; sub: 
   const label = op.gate === 'BARRIER' ? 'Barrier' : GATE_INFO[op.gate].label;
   return { label, sub: op.params.map(formatAngle).join(',') };
 }
+
+/** The op has an angle that does not parse (e.g. from a hand-edited file or link); the simulator skips it. */
+export const hasInvalidAngle = (op: Pick<Op, 'params'>): boolean => op.params.some((p) => parseAngle(p) === null);
 
 const ctlName = (kind: ControlKind) => (kind === 'on1' ? 'Control' : 'Anti-control');
 const centerY = (w: number) => w * ROW_H + ROW_H / 2;
@@ -107,7 +111,8 @@ function EndHandle({
 export const GateView = memo(function GateView({ op, step, controlled, selected, onSelect, onEditAngles }: GateViewProps) {
   const { label, sub } = opLabel(op);
   const qs = op.wires.map((w) => `q[${w}]`).join(', ');
-  const name = `${label}${sub ? ` ${sub}` : ''} on ${qs}, step ${step + 1}`;
+  const invalid = hasInvalidAngle(op);
+  const name = `${label}${sub ? ` ${sub}` : ''} on ${qs}, step ${step + 1}${invalid ? ' (invalid angle, skipped)' : ''}`;
   const d = useOpDrag(`op:${op.id}`, { type: 'op', opId: op.id });
   const select = (e: MouseEvent) => {
     e.stopPropagation();
@@ -156,8 +161,9 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
           ref={d.ref}
           {...d.props}
           aria-label={name}
-          title={name}
-          className={cls('gate')}
+          title={invalid ? `${name}: double-click to fix` : name}
+          aria-invalid={invalid || undefined}
+          className={cls(invalid ? 'gate invalid' : 'gate')}
           style={{ left: CX - GATE / 2, top: centerY(w) - GATE / 2, width: GATE, height: GATE }}
           onClick={select}
           onDoubleClick={edit}
