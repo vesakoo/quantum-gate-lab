@@ -827,6 +827,30 @@ body {
   overflow-wrap: anywhere;
 }
 
+.bloch-euler-table {
+  margin: -4px 0 6px;
+  border-collapse: collapse;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.bloch-euler-table th,
+.bloch-euler-table td {
+  padding: 1px 12px 1px 0;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.bloch-euler-table thead th {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.bloch-euler-table tbody th {
+  font-weight: 700;
+  font-style: italic;
+}
+
 .bloch-probs caption {
   text-align: left;
   font-size: 12px;

@@ -110,6 +110,7 @@ describe('Bloch strip', () => {
     expect(within(panel).getByTestId('bloch-phi')).toHaveTextContent('—');
     expect(within(panel).queryByTestId('bloch-euler')).not.toBeInTheDocument();
     expect(within(panel).getByTestId('bloch-euler-mixed')).toHaveTextContent('no single |ψ⟩');
+    expect(within(panel).queryByTestId('bloch-euler-table')).not.toBeInTheDocument();
   });
 
   it('the panel shows polar angles and the state in symbolic ket form', () => {
@@ -122,6 +123,9 @@ describe('Bloch strip', () => {
     expect(p.getByTestId('bloch-theta')).toHaveTextContent('π/2 (90.0°)');
     expect(p.getByTestId('bloch-phi')).toHaveTextContent('π/2 (90.0°)');
     expect(p.getByTestId('bloch-euler')).toHaveTextContent('|ψ⟩ = (|0⟩ + i|1⟩)/√2');
+    expect(p.getByTestId('bloch-euler-formula')).toHaveTextContent('|ψ⟩ = cos(θ/2)|0⟩ + eiφ·sin(θ/2)|1⟩');
+    expect(p.getByTestId('euler-β')).toHaveTextContent('β0.707·eiπ/20.000 + 0.707i');
+    expect(p.getByTestId('euler-α')).toHaveTextContent('α0.707·ei00.707 + 0.000i');
 
     fireEvent.click(screen.getByRole('button', { name: 'q[0] after step 3' }));
     const p3 = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] after step 3' }));
