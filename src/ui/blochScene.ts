@@ -11,7 +11,9 @@ export type BlochScene = { update: (b: Bloch) => void; dispose: () => void };
  */
 const world = (x: number, y: number, z: number) => new THREE.Vector3(y, z, x);
 
-const ARROW = 0xd03030;
+const ARROW = 0xff2020;
+const ON_TOP = 10;
+const UP = new THREE.Vector3(0, 1, 0);
 
 function label(text: string, cls: string): CSS2DObject {
   const el = document.createElement('div');
@@ -99,9 +101,22 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
     scene.add(m);
   }
 
-  const arrow = new THREE.ArrowHelper(ez, new THREE.Vector3(), 1, ARROW, 0.16, 0.09);
+  // Solid shaft + cone (WebGL lines are always 1 px), unlit and drawn last without depth test,
+  // so neither the translucent sphere nor an axis line can hide or dim it.
+  const arrowMat = track(new THREE.MeshBasicMaterial({ color: ARROW, depthTest: false }));
+  const shaftGeo = track(new THREE.CylinderGeometry(0.025, 0.025, 1, 16));
+  shaftGeo.translate(0, 0.5, 0);
+  const headGeo = track(new THREE.ConeGeometry(0.07, 1, 20));
+  headGeo.translate(0, 0.5, 0);
+  const shaft = new THREE.Mesh(shaftGeo, arrowMat);
+  const head = new THREE.Mesh(headGeo, arrowMat);
+  shaft.renderOrder = ON_TOP;
+  head.renderOrder = ON_TOP;
+  const arrow = new THREE.Group();
+  arrow.add(shaft, head);
   scene.add(arrow);
-  const tipDot = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 16, 12)), track(new THREE.MeshBasicMaterial({ color: ARROW })));
+  const tipDot = new THREE.Mesh(track(new THREE.SphereGeometry(0.04, 16, 12)), arrowMat);
+  tipDot.renderOrder = ON_TOP;
   scene.add(tipDot);
 
   const controls = new OrbitControls(camera, labels.domElement);
@@ -137,9 +152,11 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
         arrow.visible = false;
       } else {
         arrow.visible = true;
-        arrow.setDirection(v.clone().normalize());
-        const head = Math.min(0.16, len * 0.45);
-        arrow.setLength(len, head, head * 0.56);
+        arrow.quaternion.setFromUnitVectors(UP, v.clone().normalize());
+        const h = Math.min(0.18, len * 0.45);
+        shaft.scale.set(1, len - h, 1);
+        head.position.y = len - h;
+        head.scale.set(1, h, 1);
       }
       render();
     },
@@ -147,7 +164,6 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
       ro?.disconnect();
       controls.removeEventListener('change', render);
       controls.dispose();
-      arrow.dispose();
       for (const d of disposables) d.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
