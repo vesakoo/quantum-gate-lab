@@ -49,6 +49,13 @@ describe('OperatorView', () => {
     expect(screen.getByText(/Measurement at step 2/)).toBeTruthy();
   });
 
+  it('stop note says other gates in that step are left out too', () => {
+    render(<OperatorView circuit={circ(2, [[[op('H', [0])]], [[op('MEASURE', [0]), op('H', [1])]]])} />);
+    expect(
+      screen.getByText('Measurement at step 2 — the formula ends before that step, including its other gates.'),
+    ).toBeTruthy();
+  });
+
   it('reset note with no factors', () => {
     render(<OperatorView circuit={circ(2, [[[op('RESET', [0])]]])} />);
     expect(screen.getByText(/Reset at step 1/)).toBeTruthy();

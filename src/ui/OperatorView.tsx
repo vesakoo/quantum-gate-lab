@@ -36,7 +36,7 @@ export default function OperatorView({ circuit }: { circuit: Circuit }) {
       <p className="ket-note">Last step on the left · q[0] is the leftmost factor</p>
       {stop ? (
         <p className="ket-note">
-          {stop.kind === 'measure' ? 'Measurement' : 'Reset'} at step {stop.step + 1} — the formula ends before it.
+          {stop.kind === 'measure' ? 'Measurement' : 'Reset'} at step {stop.step + 1} — the formula ends before that step, including its other gates.
         </p>
       ) : null}
       {ops.invalidAngles ? <p className="ket-note">Gates with invalid angles act as I in the simulation.</p> : null}
