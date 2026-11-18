@@ -199,3 +199,11 @@ export function formatKet(amp: ArrayLike<number>, n: number, { maxTerms = 8 }: K
   const den = r === 1 ? String(s) : s === 1 ? `√${r}` : `(${s}√${r})`;
   return { text: `(${sum})/${den}`, terms: k };
 }
+
+/** One complex number in the same symbolic style as the ket (`1/√2`, `−i`, `e^{iπ/4}`), `0` when negligible. */
+export function formatComplex(re: number, im: number): string {
+  if (re * re + im * im < ZERO2) return '0';
+  const c = general(re, im);
+  const body = c.body === '' ? '1' : c.body;
+  return c.neg ? `−${body}` : body;
+}
