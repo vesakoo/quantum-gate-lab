@@ -26,8 +26,6 @@ describe('component colours come from tokens', () => {
   it('no colour literals in components', () => {
     const bad: string[] = [];
     for (const [file, src] of Object.entries(sources)) {
-      // TEMPORARY until Task 4 of the dark-theme plan moves the 3D colours to tokens; Task 4 deletes this line
-      if (file.endsWith('/blochScene.ts')) continue;
       for (const re of [/#[0-9a-fA-F]{3,8}\b/g, /\brgba?\(/g, /\bhsla?\(/g, /0x[0-9a-fA-F]{6}\b/g, /(?:fill|stroke|color)=["'](?:white|black|red|blue|green|gray|grey)["']/g]) {
         for (const hit of src.match(re) ?? []) bad.push(`${file}: ${hit}`);
       }

@@ -5,13 +5,61 @@ import type { Bloch } from '../sim/backend';
 
 export type BlochScene = { update: (b: Bloch) => void; dispose: () => void };
 
+/** Scene colours (0xRRGGBB), read from the theme tokens. */
+export type BlochColors = { sphere: number; outline: number; circle: number; axis: number; arrow: number };
+/**
+ * 'lit': today's light sphere (lit, translucent; kept by the user's choice). 'flat': unlit,
+ * full-contrast lines and a silhouette outline (dark theme and forced colours).
+ */
+export type BlochStyle = { mode: 'lit' | 'flat'; colors: BlochColors };
+
+function toHex(v: string): number {
+  const s = v.trim();
+  const m = /^#([0-9a-f]{6})$/i.exec(s);
+  if (m) return parseInt(m[1], 16);
+  const r = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/i.exec(s);
+  if (r) return (Number(r[1]) << 16) | (Number(r[2]) << 8) | Number(r[3]);
+  throw new Error(`blochScene: unsupported colour "${v}"`);
+}
+
+/** System colour (e.g. CanvasText) as resolved by the browser, via a probe element. */
+function systemColor(name: 'CanvasText' | 'Canvas'): number {
+  const probe = document.createElement('span');
+  probe.dataset.probe = name.toLowerCase();
+  probe.style.color = name;
+  document.body.appendChild(probe);
+  const c = window.getComputedStyle(probe).color;
+  probe.remove();
+  return toHex(c);
+}
+
+/** The scene style for the current theme, from the CSS tokens on `root`. */
+export function readBlochStyle(root: Element = document.documentElement): BlochStyle {
+  const forced = typeof window.matchMedia === 'function' && window.matchMedia('(forced-colors: active)').matches;
+  if (forced) {
+    const ink = systemColor('CanvasText');
+    return { mode: 'flat', colors: { sphere: systemColor('Canvas'), outline: ink, circle: ink, axis: ink, arrow: ink } };
+  }
+  const cs = window.getComputedStyle(root);
+  const token = (n: string) => toHex(cs.getPropertyValue(n));
+  return {
+    mode: (root as HTMLElement).dataset?.theme === 'light' ? 'lit' : 'flat',
+    colors: {
+      sphere: token('--sphere'),
+      outline: token('--bloch-outline'),
+      circle: token('--bloch-circle'),
+      axis: token('--bloch-axis'),
+      arrow: token('--arrow'),
+    },
+  };
+}
+
 /**
  * Bloch (x, y, z) → three.js world. Matches the mini-sphere projection:
  * up (+Y) = +z, screen-right (+X) = +y, toward the viewer (+Z) = +x.
  */
 const world = (x: number, y: number, z: number) => new THREE.Vector3(y, z, x);
 
-const ARROW = 0xff2020;
 const ON_TOP = 10;
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -29,15 +77,22 @@ function circle(axisA: THREE.Vector3, axisB: THREE.Vector3, color: number, opaci
     pts.push(axisA.clone().multiplyScalar(Math.cos(t)).add(axisB.clone().multiplyScalar(Math.sin(t))));
   }
   const geo = new THREE.BufferGeometry().setFromPoints(pts);
-  return new THREE.LineLoop(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+  const mat = opacity < 1 ? new THREE.LineBasicMaterial({ color, transparent: true, opacity }) : new THREE.LineBasicMaterial({ color });
+  return new THREE.LineLoop(geo, mat);
 }
 
 /** Mounts a rotatable Bloch sphere into `host`. Returns null when WebGL is unavailable. */
-export function createBlochScene(host: HTMLElement): BlochScene | null {
+export function createBlochScene(
+  host: HTMLElement,
+  { mode, colors }: BlochStyle,
+  /** tests inject a stub renderer (no WebGL in jsdom) */
+  opts: { renderer?: THREE.WebGLRenderer } = {},
+): BlochScene | null {
   if (typeof WebGLRenderingContext === 'undefined') return null;
+  const flat = mode === 'flat';
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = opts.renderer ?? new THREE.WebGLRenderer({ antialias: true, alpha: true });
   } catch {
     return null;
   }
@@ -59,24 +114,32 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
   camera.position.copy(new THREE.Vector3(0.35, 0.35, 1).normalize().multiplyScalar(5.6));
   camera.lookAt(0, 0, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-  const dir = new THREE.DirectionalLight(0xffffff, 1.2);
-  dir.position.set(2, 3, 4);
-  scene.add(dir);
+  if (!flat) {
+    // white light (the default colour), as today
+    scene.add(new THREE.AmbientLight(undefined, 0.9));
+    const dir = new THREE.DirectionalLight(undefined, 1.2);
+    dir.position.set(2, 3, 4);
+    scene.add(dir);
+  }
 
   const disposables: { dispose: () => void }[] = [];
   const track = <T extends { dispose: () => void }>(d: T) => (disposables.push(d), d);
 
   const sphere = new THREE.Mesh(
     track(new THREE.SphereGeometry(1, 48, 32)),
-    track(new THREE.MeshPhongMaterial({ color: 0x9fc4ee, transparent: true, opacity: 0.18, depthWrite: false })),
+    track(
+      flat
+        ? new THREE.MeshBasicMaterial({ color: colors.sphere, transparent: true, opacity: 0.55, depthWrite: false })
+        : new THREE.MeshPhongMaterial({ color: colors.sphere, transparent: true, opacity: 0.18, depthWrite: false }),
+    ),
   );
   scene.add(sphere);
 
   const ex = world(1, 0, 0);
   const ey = world(0, 1, 0);
   const ez = world(0, 0, 1);
-  for (const c of [circle(ex, ey, 0x4a6080, 0.9), circle(ex, ez, 0x4a6080, 0.45), circle(ey, ez, 0x4a6080, 0.45)]) {
+  const [eq, mer] = flat ? [1, 1] : [0.9, 0.45];
+  for (const c of [circle(ex, ey, colors.circle, eq), circle(ex, ez, colors.circle, mer), circle(ey, ez, colors.circle, mer)]) {
     track(c.geometry);
     track(c.material as THREE.Material);
     scene.add(c);
@@ -89,7 +152,7 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
   ];
   for (const [v, name, plus, minus] of axes) {
     const geo = track(new THREE.BufferGeometry().setFromPoints([v.clone().multiplyScalar(-1.25), v.clone().multiplyScalar(1.25)]));
-    scene.add(new THREE.Line(geo, track(new THREE.LineBasicMaterial({ color: 0x555555 }))));
+    scene.add(new THREE.Line(geo, track(new THREE.LineBasicMaterial({ color: colors.axis }))));
     const axisLabel = label(name, 'axis');
     axisLabel.position.copy(v.clone().multiplyScalar(1.42));
     scene.add(axisLabel);
@@ -105,7 +168,7 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
   // opaque objects before transparent ones and sorts by renderOrder only within each list, so the
   // arrow is flagged transparent (at full opacity) to land after the translucent sphere and circles.
   const arrowMat = track(
-    new THREE.MeshBasicMaterial({ color: ARROW, transparent: true, opacity: 1, depthTest: false, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ color: colors.arrow, transparent: true, opacity: 1, depthTest: false, depthWrite: false }),
   );
   const shaftGeo = track(new THREE.CylinderGeometry(0.025, 0.025, 1, 16));
   shaftGeo.translate(0, 0.5, 0);
@@ -127,7 +190,25 @@ export function createBlochScene(host: HTMLElement): BlochScene | null {
   controls.enableZoom = false;
   controls.enableDamping = false;
 
+  // flat mode: a silhouette outline, re-placed each frame where a perspective camera sees the
+  // sphere's edge (distance r²/D toward the camera, radius r·√(1 − r²/D²); unit sphere)
+  let ring: THREE.Mesh | null = null;
+  if (flat) {
+    ring = new THREE.Mesh(
+      track(new THREE.RingGeometry(1, 1.03, 96)),
+      track(new THREE.MeshBasicMaterial({ color: colors.outline, side: THREE.DoubleSide })),
+    );
+    scene.add(ring);
+  }
+
   const render = () => {
+    if (ring) {
+      const d = camera.position.length();
+      ring.position.copy(camera.position.clone().normalize().multiplyScalar(1 / d));
+      const k = Math.sqrt(1 - 1 / (d * d));
+      ring.scale.set(k, k, 1);
+      ring.lookAt(camera.position);
+    }
     renderer.render(scene, camera);
     labels.render(scene, camera);
   };
