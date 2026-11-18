@@ -130,6 +130,13 @@ button:hover:not(:disabled) {
   background: var(--button-hover-bg);
 }
 
+/* disabled: no fading (it breaks contrast); a dashed border and secondary text instead */
+button:disabled {
+  color: var(--muted);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
 /* chart and meter marks */
 .chart-grid {
   stroke: var(--grid-line);
@@ -420,7 +427,7 @@ button:hover:not(:disabled) {
   font-family: inherit;
 }
 
-.init-box:hover {
+.in-row .init-box:hover:not(:disabled) {
   background: var(--hover-bg);
 }
 
@@ -540,7 +547,8 @@ button:hover:not(:disabled) {
   inset: 5px;
   box-sizing: border-box;
   border-radius: 50%;
-  border: 2px solid var(--panel);
+  border: 2px solid var(--wire);
+  box-shadow: 0 0 0 1.5px var(--panel);
 }
 
 .b-grip.role::before {
@@ -646,6 +654,7 @@ button:hover:not(:disabled) {
   justify-content: center;
   font-weight: 700;
   font-size: 15px;
+  color: var(--out-digit);
 }
 
 /* ---------- toolbar, dialog ---------- */
@@ -780,6 +789,10 @@ button:hover:not(:disabled) {
 }
 
 .angle-field input {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
   font-family: ui-monospace, Menlo, Consolas, monospace;
   font-size: 14px;
   padding: 5px 7px;
@@ -862,8 +875,9 @@ button:hover:not(:disabled) {
   cursor: pointer;
 }
 
-.mini-bloch:hover {
+.bloch-strip .mini-bloch:hover:not(:disabled) {
   border-color: var(--border);
+  background: transparent;
 }
 
 .mini-bloch.selected {
@@ -1405,6 +1419,14 @@ button:hover:not(:disabled) {
   .b-grip::before {
     forced-color-adjust: none;
     border-color: CanvasText;
+  }
+
+  .step-column .ctl-ball.selected {
+    outline-color: Highlight;
+  }
+
+  .step-column .ctl-ball.orphan {
+    outline-color: CanvasText;
   }
 
   .b-grip.role::before {

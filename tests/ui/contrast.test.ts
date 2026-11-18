@@ -22,18 +22,19 @@ const SURFACES: Record<string, { text: string[]; marks: string[]; via?: string }
     text: ['--text', '--muted', '--danger'],
     marks: ['--border', '--wire', '--gate-border', '--ctl', '--chart-bar', '--focus', '--select', '--danger', '--button-border'],
   },
-  '--bg': { text: ['--text', '--muted'], marks: ['--focus', '--gate-border', '--border'] },
+  '--bg': { text: ['--text', '--muted'], marks: ['--focus', '--gate-border', '--border', '--chart-bar'] }, // result panels have no own background
   '--raised': { text: ['--text', '--muted', '--danger'], marks: ['--border', '--focus'] },
-  '--danger-bg': { text: ['--text', '--danger'], marks: ['--focus', '--danger'] },
+  '--danger-bg': { text: ['--text', '--danger'], marks: ['--focus', '--danger', '--gate-border'] }, // palette while the trash is hovered
   '--danger': { text: ['--danger-bg'], marks: [] }, // the invalid gate's "!" badge
-  '--gate-fill': { text: ['--gate-text'], marks: [] },
+  '--gate-fill': { text: ['--gate-text'], marks: ['--wire', '--gate-border'] }, // B grips (target ring, control dot)
   '--drop-target': { text: ['--text'], marks: ['--wire', '--gate-border', '--ctl'], via: '--panel' },
-  '--button-bg': { text: ['--button-text'], marks: ['--focus'] },
+  '--button-bg': { text: ['--button-text'], marks: ['--focus', '--button-border'] },
   '--button-hover-bg': { text: ['--button-text'], marks: [] },
   '--hover-bg': { text: ['--text'], marks: ['--wire'] },
+  '--selection-bg': { text: [], marks: ['--wire', '--ctl', '--gate-border', '--select'], via: '--panel' },
   '--badge-bg': { text: ['--badge-text'], marks: ['--border'] },
   '--barrier-bg': { text: ['--text'], marks: ['--border'] },
-  '--mixed-bg': { text: ['--text', '--muted'], marks: [] },
+  '--mixed-bg': { text: ['--text', '--muted'], marks: ['--ctl'] },
   '--out-fill': { text: ['--out-digit'], marks: [] },
   '--mini-sphere': { text: [], marks: ['--mini-line', '--mini-arrow'] },
   '--mini-sphere-mixed': { text: [], marks: ['--mini-line', '--mini-arrow'] },
@@ -79,7 +80,6 @@ const DECORATIVE = [
   '--shadow', // depth cue under dialog/card; the --border edge carries the boundary
   '--divider', // separators between rows of the palette
   '--grid-line', // hairlines between grid header cells; wires and gate outlines carry the structure
-  '--selection-bg', // tint inside the --select ring
   '--bloch-outline', // light: unused by the lit sphere (measured in dark)
 ];
 
@@ -132,6 +132,21 @@ describe('theme tokens', () => {
 
   it.each(cases(EXCEPTIONS))('%s: documented exception %o is still below its minimum', (theme, pr) => {
     expect(ratio(theme, pr)).toBeLessThan(pr.min);
+  });
+
+  it('every same-rule background/foreground token pair is measured', () => {
+    const measured = new Set([...PAIRS, ...EXCEPTIONS].map((x) => `${x.fg}|${x.bg}`));
+    const missing: string[] = [];
+    const re = /([^{}]+)\{([^{}]*)\}/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(css))) {
+      const body = m[2];
+      const bg = /(?:^|[;\s])background(?:-color)?\s*:\s*var\((--[a-z0-9-]+)\)/.exec(body)?.[1];
+      if (!bg) continue;
+      const fgs = [...body.matchAll(/(?:^|[;\s])(?:color|border(?:-[a-z]+)?(?:-color)?|outline(?:-color)?)\s*:[^;]*var\((--[a-z0-9-]+)\)/g)].map((x) => x[1]);
+      for (const fg of fgs) if (fg !== bg && !measured.has(`${fg}|${bg}`)) missing.push(`${m[1].trim()}: ${fg} on ${bg}`);
+    }
+    expect(missing).toEqual([]);
   });
 
   it('every token is measured or declared decorative', () => {

@@ -23,20 +23,20 @@ const fixture = readFileSync(resolve(root, 'scripts/a11y-fixture.json'), 'utf8')
 const HASH = Buffer.from(JSON.stringify(JSON.parse(fixture))).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
 /** axe "incomplete" results allowed only where a named pixel check below covers the same element. */
+const cls = (c) => new RegExp(`\\.${c}(?![\\w-])`);
 const COVERED = [
-  ['.out-digit', 'out digit'],
-  ['.out-box', 'out digit'],
-  ['.bloch3d-label', '3D label'],
-  ['.gate', 'gate label'],
-  ['.gate-label', 'gate label'],
-  ['.gate-sub', 'gate label'],
-  ['.updating-badge', 'badge'],
-  ['.chart-', 'chart text'],
-  ['text[x=', 'chart text'],
-  ['.corner-', 'corner label'],
-  ['.theme-toggle', 'button text'],
-  ['.more-toggle', 'button text'],
-  ['-title', 'dialog title'],
+  [cls('out-digit'), 'out digit'],
+  [cls('out-box'), 'out digit'],
+  [cls('bloch3d-label'), '3D label'],
+  [cls('gate-label'), 'gate label'],
+  [cls('gate-sub'), 'gate label'],
+  [cls('updating-badge'), 'badge'],
+  [/\.chart-(tick|label|value)(?![\w-])/, 'chart text'],
+  [/^text\[x=/, 'chart text'],
+  [/\.corner-(tl|tr|bl|br)(?![\w-])/, 'corner label'],
+  [cls('theme-toggle-icon'), 'button text'],
+  [/\.more-toggle(?![\w-])/, 'button text'],
+  [/^#\\:r[0-9a-z]+\\:-title$/, 'dialog title'],
 ];
 
 const failures = [];
@@ -121,7 +121,7 @@ async function axe(page, theme, state) {
   for (const v of res.incomplete)
     for (const n of v.nodes) {
       const t = n.target.join(' ');
-      const covered = COVERED.find(([sel]) => t.includes(sel));
+      const covered = COVERED.find(([re]) => re.test(t));
       if (covered) note(theme, state, `axe incomplete ${v.id}`, `${t} → covered by pixel check "${covered[1]}"`);
       else fail(theme, state, `axe incomplete ${v.id}`, `${t} (not covered by a pixel check)`);
     }
@@ -174,12 +174,26 @@ async function pixelChecks(page, img, theme, state) {
     const b = await box(page, sel);
     if (b && chart) gate(theme, state, what, measure(img, b, { x: chart.x, y: chart.y, width: 12, height: 12 }), min);
   }
-  // gates: label on fill (7), outline vs panel (3)
-  for (const sel of ['.step-column .gate:not(.invalid)', '.step-column .gate.invalid']) {
-    const b = await box(page, sel);
-    if (!b) continue;
-    gate(theme, state, `${sel} label`, measure(img, grow(b, -6), grow(b, -4)), 7);
-    gate(theme, state, `${sel} outline`, measure(img, { x: b.x, y: b.y + b.height / 2 - 3, width: 2, height: 6 }, { x: b.x - 8, y: b.y + b.height / 2 - 3, width: 5, height: 6 }), 3);
+  // every gate: label on fill (7), outline vs panel (3) sampled in the top quarter, away from the wire
+  for (const el of await page.$$('.step-column .gate')) {
+    const b = await el.boundingBox();
+    const name = await el.getAttribute('aria-label');
+    gate(theme, state, `gate label ${name}`, measure(img, grow(b, -6), grow(b, -4)), 7);
+    const y = b.y + 4;
+    gate(theme, state, `gate outline ${name}`, measure(img, { x: b.x, y, width: 2, height: 6 }, { x: b.x - 8, y, width: 5, height: 6 }), 3);
+  }
+  // SWAP ends (× glyph) and barriers vs the panel
+  for (const sel of ['.step-column .swap-end', '.step-column .barrier']) {
+    for (const el of await page.$$(sel)) {
+      const b = await el.boundingBox();
+      gate(theme, state, `${sel} vs panel`, measure(img, b, { x: b.x - 6, y: b.y, width: 3, height: 3 }), 3);
+    }
+  }
+  // B grips: ring / dot vs what they sit on (the gate fill of an adjacent B, or the panel)
+  for (const el of await page.$$('.step-column .b-grip')) {
+    const b = await el.boundingBox();
+    const name = await el.getAttribute('aria-label');
+    gate(theme, state, `B grip ${name}`, measure(img, grow(b, -4), b), 3);
   }
   // invalid "!" badge
   const badge = await page.$('.step-column .gate.invalid');
@@ -207,17 +221,70 @@ async function pixelChecks(page, img, theme, state) {
   }
 }
 
+/** "Updating…" badge: forced visible in the Output state header for a moment, then removed. */
+async function badgeCheck(page, theme) {
+  await page.evaluate(() => {
+    const h = document.querySelector('.ket-view header');
+    const b = document.createElement('span');
+    b.className = 'updating-badge';
+    b.id = 'audit-badge';
+    b.style.visibility = 'visible';
+    b.style.animation = 'none';
+    b.textContent = 'Updating…';
+    h?.appendChild(b);
+  });
+  const img = await shot(page, theme, 'badge');
+  const b = await box(page, '#audit-badge');
+  if (b) gate(theme, 'badge', 'Updating badge text', measure(img, grow(b, -3), grow(b, -2)), 7);
+  else fail(theme, 'badge', 'Updating badge', 'not rendered');
+  await page.evaluate(() => document.getElementById('audit-badge')?.remove());
+}
+
+/** Hover states: text and marks on the hover background. */
+async function hoverChecks(page, theme) {
+  for (const [sel, what] of [['.grid-toolbar button', 'button hover'], ['.theme-toggle', 'toggle hover'], ['.in-row .init-box', 'init box hover'], ['.io-toolbar button', 'toolbar button hover']]) {
+    await page.hover(sel);
+    await page.waitForTimeout(100);
+    const img = await shot(page, theme, `hover-${what.replace(/ /g, '-')}`);
+    const b = await box(page, sel);
+    if (b) gate(theme, 'hover', `${what} text`, measure(img, grow(b, -4), grow(b, -2)), 7);
+  }
+  await page.mouse.move(2, 2);
+}
+
 async function blochChecks(page, img, theme, state) {
   const canvas = await box(page, '.bloch3d-canvas');
-  if (!canvas) return note(theme, state, '3D panel', 'no WebGL canvas');
-  const panelBg = { x: canvas.x + 2, y: canvas.y + 2, width: 6, height: 6 };
-  const lightEx = theme === 'light' ? "today's light sphere kept, user choice 2026-11-19" : undefined;
-  gate(theme, state, '3D drawing vs panel', measure(img, grow(canvas, -20), panelBg), 3, lightEx);
+  if (!canvas) return fail(theme, state, '3D panel', 'no WebGL canvas');
+  const tok = await page.evaluate(() => {
+    const cs = getComputedStyle(document.documentElement);
+    return Object.fromEntries(['--panel', '--arrow', '--bloch-outline', '--bloch-circle'].map((n) => [n, cs.getPropertyValue(n).trim()]));
+  });
+  const panel = parseColor(tok['--panel']);
+  const near = (c, t, d = 40) => Math.hypot(c[0] - t[0], c[1] - t[1], c[2] - t[2]) < d;
+  const px = pixelsIn(img, canvas);
+  const sphereBg = mode(pixelsIn(img, { x: canvas.x + canvas.width * 0.4, y: canvas.y + canvas.height * 0.55, width: canvas.width * 0.12, height: canvas.height * 0.12 }));
+  const lightEx = theme === 'light' ? "today's light sphere kept (meridians, arrow), user choice 2026-11-19" : undefined;
+  // the arrow must be drawn, and stand out from the sphere fill and the panel
+  const arrow = px.filter((c) => near(c, parseColor(tok['--arrow']), 60));
+  if (arrow.length < 20) fail(theme, state, '3D arrow', `not found (${arrow.length} px)`);
+  else {
+    const a = mode(arrow);
+    gate(theme, state, '3D arrow vs sphere fill', contrast(a, sphereBg), 3, lightEx);
+    gate(theme, state, '3D arrow vs panel', contrast(a, panel), 3, lightEx);
+  }
+  if (theme === 'dark') {
+    const outline = px.filter((c) => near(c, parseColor(tok['--bloch-outline']), 30));
+    if (outline.length < 50) fail(theme, state, '3D outline', `not found (${outline.length} px)`);
+    else gate(theme, state, '3D outline vs panel', contrast(mode(outline), panel), 3);
+    const circles = px.filter((c) => near(c, parseColor(tok['--bloch-circle']), 30));
+    if (circles.length < 50) fail(theme, state, '3D circles', `not found (${circles.length} px)`);
+    else gate(theme, state, '3D circles vs sphere fill', contrast(mode(circles), sphereBg), 3);
+  }
   for (const l of await page.$$('.bloch3d-label')) {
     const b = await l.boundingBox();
     const kind = await l.evaluate((e) => (e.classList.contains('axis') ? 'axis' : 'state'));
     // state labels sit on their own backing; axis labels sit on the canvas around the sphere
-    gate(theme, state, `3D ${kind} label`, measure(img, grow(b, -1), kind === 'state' ? grow(b, -1) : grow(b, 2)), 7, lightEx);
+    gate(theme, state, `3D ${kind} label`, measure(img, grow(b, -1), kind === 'state' ? grow(b, -1) : grow(b, 2)), 7);
   }
 }
 
@@ -251,13 +318,17 @@ async function focusWalk(page, theme) {
     if (info.covered) fail(theme, state, 'focus not obscured', 'ring covered by the gate card or a dialog');
     if (info.box.y < 0 || info.box.y > 2000) continue;
     const img = decode(await page.screenshot());
-    const ring = grow(info.box, info.offset + info.width);
-    const gap = grow(info.box, Math.max(1, info.offset - 1));
-    // surface = mode colour of the whole gap between element and ring (a single band could land on
-    // a glyph next to the element, e.g. a SWAP ×); ring = the most contrasting pixel in the ring band
-    const surface = mode(pixelsIn(img, gap, inside(info.box)));
+    // sample only the ring's top edge, leaving out the middle columns: horizontal wires run through
+    // the element's vertical centre and control/connector lines through its horizontal centre, so
+    // neither can stand in for the ring
+    const cx = info.box.x + info.box.width / 2;
+    const away = (x) => Math.abs(x - cx) < 5;
+    const top = info.box.y - info.offset - info.width;
+    const ringBand = { x: info.box.x - info.offset, y: top, width: info.box.width + 2 * info.offset, height: info.width };
+    const gapBand = { x: info.box.x, y: info.box.y - info.offset + 1, width: info.box.width, height: Math.max(1, info.offset - 2) };
+    const surface = mode(pixelsIn(img, gapBand, (x) => away(x)));
     let best = 1;
-    for (const c of pixelsIn(img, ring, inside(grow(info.box, info.offset)))) best = Math.max(best, contrast(c, surface));
+    for (const c of pixelsIn(img, ringBand, (x) => away(x))) best = Math.max(best, contrast(c, surface));
     gate(theme, state, 'focus ring vs surface', best, 3);
   }
   note(theme, 'focus walk', 'stops', String(seen.size));
@@ -278,7 +349,10 @@ async function forcedColors(browser, url) {
       canvas: getComputedStyle(document.body).backgroundColor,
       on1: css('.step-column .ctl-ball.on1', 'backgroundColor'),
       on0: css('.step-column .ctl-ball.on0', 'backgroundColor'),
-      wire: css('.cell', 'color'),
+      wire: (() => {
+        const el = document.querySelector('.cell');
+        return el ? getComputedStyle(el, '::before').borderTopColor : null;
+      })(),
       connector: (() => {
         const el = document.querySelector('.step-column .connector');
         return el ? getComputedStyle(el, '::before').backgroundColor : null;
@@ -290,6 +364,21 @@ async function forcedColors(browser, url) {
   if (!r.gateBorder || r.gateBorder === r.canvas || r.gateBorder === 'rgba(0, 0, 0, 0)') fail(t, 'default', 'gate outline', String(r.gateBorder));
   if (!r.on1 || r.on1 === r.on0) fail(t, 'default', 'filled vs open control', `${r.on1} vs ${r.on0}`);
   if (!r.connector || r.connector === r.canvas || r.connector === 'rgba(0, 0, 0, 0)') fail(t, 'default', 'connector', String(r.connector));
+  if (!r.wire || r.wire === r.canvas || r.wire === 'rgba(0, 0, 0, 0)') fail(t, 'default', 'wire', String(r.wire));
+  await page.click('.step-column .gate:not(.invalid)');
+  const selColor = await page.evaluate(() => {
+    const el = document.querySelector('.selection');
+    return el ? getComputedStyle(el).borderTopColor : null;
+  });
+  if (!selColor || selColor === r.canvas || selColor === 'rgba(0, 0, 0, 0)') fail(t, 'selected', 'selection ring', String(selColor));
+  await page.keyboard.press('Escape');
+  await page.mouse.click(1, 1);
+  await page.keyboard.press('Tab');
+  const focus = await page.evaluate(() => {
+    const cs = getComputedStyle(document.activeElement);
+    return { color: cs.outlineColor, style: cs.outlineStyle };
+  });
+  if (focus.style === 'none' || focus.color === r.canvas) fail(t, 'focus', 'focus ring', JSON.stringify(focus));
   note(t, 'default', 'computed', JSON.stringify(r));
   await ctx.close();
 }
@@ -313,8 +402,9 @@ try {
     await pixelChecks(page, img, theme, 'default');
 
     // gate card open on a grid gate
-    await page.hover('.step-column .gate:not(.invalid)');
+    await page.hover('.step-column .gate[aria-label^="X on q[1]"]');
     await page.waitForSelector('.gate-card', { timeout: 3000 });
+    if (!(await page.textContent('.gate-card'))?.includes('CC̄X') && !(await page.textContent('.gate-card'))?.includes('=')) fail(theme, 'card', 'card Here section', 'no block matrix shown');
     img = await shot(page, theme, 'card');
     await axe(page, theme, 'card');
     await page.mouse.move(2, 2);
@@ -324,9 +414,13 @@ try {
     await page.click('.step-column .gate:not(.invalid)');
     img = await shot(page, theme, 'selected');
     const sel = await box(page, '.selection');
-    if (sel) gate(theme, 'selected', 'selection ring vs panel', measure(img, { x: sel.x, y: sel.y + sel.height / 2 - 3, width: 2, height: 6 }, { x: sel.x - 6, y: sel.y + sel.height / 2 - 3, width: 3, height: 6 }), 3);
+    if (sel) {
+      const cx = sel.x + sel.width / 2;
+      const away = (x) => Math.abs(x - cx) < 6;
+      gate(theme, 'selected', 'selection ring vs panel', measure(img, { x: sel.x, y: sel.y, width: sel.width, height: 2 }, { x: sel.x, y: sel.y - 5, width: sel.width, height: 3 }, away), 3);
+    }
     await page.keyboard.press('Escape');
-    await page.click('.mini-bloch >> nth=6');
+    await page.click('[aria-label^="q[2] after step 1"]');
     await page.waitForTimeout(1500);
     img = await shot(page, theme, 'bloch');
     await axe(page, theme, 'bloch');
@@ -345,6 +439,9 @@ try {
     const dlg = await box(page, '.angle-dialog');
     if (dlg) gate(theme, 'dialog', 'dialog edge vs backdrop', measure(img, { x: dlg.x, y: dlg.y + 20, width: 1, height: 10 }, { x: dlg.x - 8, y: dlg.y + 20, width: 5, height: 10 }), 3);
     await page.keyboard.press('Escape');
+
+    await badgeCheck(page, theme);
+    await hoverChecks(page, theme);
 
     // keyboard focus walk
     await focusWalk(page, theme);
