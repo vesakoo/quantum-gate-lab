@@ -27,7 +27,11 @@ export type HereInfo = {
   invalidNote?: string;
   control?: ControlInfo;
   orphanNote?: string;
+  /** For an uncontrolled two-qubit gate on reversed wires: which qubit is the left bit of |00⟩…|11⟩. */
+  basisOrder?: string;
 };
+
+const ascending = (ws: number[]) => ws.every((w, i) => i === 0 || w > ws[i - 1]);
 
 type Found = { op: Op; step: number } | { control: Control; step: number } | null;
 
@@ -90,14 +94,18 @@ function controlInfo(controlsIn: Control[], opsIn: Op[]): ControlInfo {
   });
   terms.push([...controls.map((k) => proj(sat(k))), uName].join(' ⊗ '));
 
-  const order = [...controls.map((k) => k.wire), ...ops.flatMap((o) => o.wires)];
-  const ascending = order.every((w, i) => i === 0 || w > order[i - 1]);
+  const targets = ops.flatMap((o) => o.wires);
+  const order = [...controls.map((k) => k.wire), ...targets];
+  const causes = [
+    ...(controls.some((k) => targets.some((w) => k.wire > w)) ? ['control first'] : []),
+    ...(ascending(targets) ? [] : ['gate wire order']),
+  ];
   return {
     condition: `applied only when ${controls.map((k) => `q[${k.wire}] = ${sat(k)}`).join(' and ')}`,
     block: { rows },
     blockLabel,
     projector: terms.join(' + '),
-    basisOrder: `Basis order: ${order.map((w) => `q[${w}]`).join(' ')}${ascending ? '' : ' (control first)'}`,
+    basisOrder: `Basis order: ${order.map((w) => `q[${w}]`).join(' ')}${causes.length ? ` (${causes.join(', ')})` : ''}`,
   };
 }
 
@@ -144,5 +152,8 @@ export function cardHere(c: Circuit, t: CardTarget): HereInfo | null {
     }
   }
   if (controlled && isUnitary(op)) here.control = controlInfo(step.controls, unitaries);
+  else if (op.wires.length === 2 && !ascending(op.wires)) {
+    here.basisOrder = `Basis order: ${op.wires.map((w) => `q[${w}]`).join(' ')} (gate wire order)`;
+  }
   return here;
 }

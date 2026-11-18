@@ -1,5 +1,5 @@
 import {
-  createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState,
+  createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore,
   type FocusEvent, type MouseEvent, type PointerEvent, type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -44,8 +44,10 @@ const keyOf = (t: CardTarget): string => {
 type Open = { target: CardTarget; key: string; anchor: HTMLElement; pinned: boolean };
 
 type Ctx = {
-  openKey: string | null;
-  enter: (t: CardTarget, el: HTMLElement) => void;
+  /** Open-card key as a tiny store, so only the triggers whose own "am I open" flips re-render. */
+  subscribe: (cb: () => void) => () => void;
+  getKey: () => string | null;
+  enter: (t: CardTarget, el: HTMLElement, buttons: number) => void;
   leave: () => void;
   focus: (t: CardTarget, el: HTMLElement) => void;
   blur: (key: string) => void;
@@ -64,9 +66,12 @@ export function GateCardProvider({ circuit, children }: { circuit: Circuit; chil
   const cardRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number; side: 'right' | 'left' } | null>(null);
 
+  const listeners = useRef(new Set<() => void>());
   const setOpen = useCallback((o: Open | null) => {
+    const changed = openRef.current?.key !== o?.key;
     openRef.current = o;
     setOpenState(o);
+    if (changed) listeners.current.forEach((l) => l());
   }, []);
   const clearTimers = () => {
     clearTimeout(openTimer.current);
@@ -92,9 +97,14 @@ export function GateCardProvider({ circuit, children }: { circuit: Circuit; chil
       setOpen({ target: t, key: keyOf(t), anchor: el, pinned });
     };
     return {
-      openKey: open?.key ?? null,
-      enter(t, el) {
-        if (dragging.current) return;
+      subscribe(cb) {
+        listeners.current.add(cb);
+        return () => void listeners.current.delete(cb);
+      },
+      getKey: () => openRef.current?.key ?? null,
+      enter(t, el, buttons) {
+        // a pressed button means a click or drag is starting: never open from that
+        if (dragging.current || buttons !== 0) return;
         const cur = openRef.current;
         if (cur?.pinned) return;
         clearTimers();
@@ -123,12 +133,13 @@ export function GateCardProvider({ circuit, children }: { circuit: Circuit; chil
         else show(t, el, true);
       },
     };
-  }, [open?.key, setOpen, close]);
+  }, [setOpen, close]);
 
   // pointer presses: remember them (to tell mouse focus from keyboard focus) and close on outside presses
   useEffect(() => {
     const onDown = (e: Event) => {
       lastPointerDown.current = performance.now();
+      clearTimeout(openTimer.current);
       const cur = openRef.current;
       const t = e.target as Node | null;
       if (cur && t && !cur.anchor.contains(t) && !cardRef.current?.contains(t)) close();
@@ -175,8 +186,8 @@ export function GateCardProvider({ circuit, children }: { circuit: Circuit; chil
 
   const card =
     open && dk ? (
-      <div ref={cardRef}>
         <GateCard
+          ref={cardRef}
           id={CARD_ID}
           docKey={dk}
           here={cardHere(circuit, open.target)}
@@ -186,7 +197,6 @@ export function GateCardProvider({ circuit, children }: { circuit: Circuit; chil
           onPointerEnter={() => clearTimeout(closeTimer.current)}
           onPointerLeave={ctx.leave}
         />
-      </div>
     ) : null;
 
   return (
@@ -196,6 +206,8 @@ export function GateCardProvider({ circuit, children }: { circuit: Circuit; chil
     </GateCardCtx.Provider>
   );
 }
+
+const noSubscribe = () => () => {};
 
 type TriggerProps = {
   onPointerEnter?: (e: PointerEvent<HTMLElement>) => void;
@@ -218,10 +230,11 @@ export function useGateCardTrigger(
 ): TriggerProps {
   const ctx = useContext(GateCardCtx);
   const key = keyOf(target);
+  const isOpen = useSyncExternalStore(ctx?.subscribe ?? noSubscribe, () => (ctx ? ctx.getKey() === key : false));
   if (!ctx) return opts.describedBy ? { 'aria-describedby': opts.describedBy } : {};
-  const ids = [ctx.openKey === key ? CARD_ID : null, opts.describedBy].filter(Boolean).join(' ');
+  const ids = [isOpen ? CARD_ID : null, opts.describedBy].filter(Boolean).join(' ');
   return {
-    onPointerEnter: (e) => ctx.enter(target, e.currentTarget),
+    onPointerEnter: (e) => ctx.enter(target, e.currentTarget, e.buttons ?? 0),
     onPointerLeave: () => ctx.leave(),
     onFocus: (e) => ctx.focus(target, e.currentTarget),
     onBlur: () => ctx.blur(key),

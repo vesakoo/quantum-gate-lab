@@ -5,7 +5,9 @@ import { emptyCircuit, type Circuit } from '../../src/model/circuit';
 import type { CardTarget } from '../../src/ui/gateCardHere';
 import { GateCardProvider, placeCard, useGateCardTrigger } from '../../src/ui/gateCardContext';
 
+const renders: Record<string, number> = {};
 function Trigger({ label, target, pinnable, describedBy }: { label: string; target: CardTarget; pinnable?: boolean; describedBy?: string }) {
+  renders[label] = (renders[label] ?? 0) + 1;
   const p = useGateCardTrigger(target, { pinnable, describedBy });
   return (
     <button type="button" {...p}>
@@ -170,5 +172,55 @@ describe('GateCardProvider', () => {
     expect(tip()).not.toBeNull();
     rerender(<Harness circuit={emptyCircuit(1, 1)} />);
     expect(tip()).toBeNull();
+  });
+
+  it('places the card from its own size and clamps it at the bottom', () => {
+    const rect = (l: number, t: number, w: number, h: number) =>
+      ({ left: l, top: t, right: l + w, bottom: t + h, width: w, height: h, x: l, y: t, toJSON() {} }) as DOMRect;
+    const orig = HTMLElement.prototype.getBoundingClientRect;
+    HTMLElement.prototype.getBoundingClientRect = function (this: HTMLElement) {
+      if (this.getAttribute('role') === 'tooltip') return rect(0, 0, 300, 200);
+      if (this.textContent === 'H') return rect(100, window.innerHeight - 60, 40, 40);
+      return rect(0, 0, 0, 0);
+    };
+    try {
+      render(<Harness circuit={withOp()} />);
+      fireEvent.focus(btn('H'));
+      expect(tip()!.style.left).toBe('150px');
+      expect(tip()!.style.top).toBe(`${window.innerHeight - 8 - 200}px`);
+    } finally {
+      HTMLElement.prototype.getBoundingClientRect = orig;
+    }
+  });
+
+  it('a press cancels a pending open', () => {
+    render(<Harness circuit={withOp()} />);
+    fireEvent.pointerEnter(btn('op'));
+    advance(200);
+    fireEvent.pointerDown(btn('op'));
+    advance(400);
+    expect(tip()).toBeNull();
+  });
+
+  it('opening a card does not re-render other triggers', () => {
+    render(<Harness circuit={withOp()} />);
+    const before = renders.X;
+    fireEvent.focus(btn('H'));
+    fireEvent.blur(btn('H'));
+    expect(renders.X).toBe(before);
+  });
+
+  it('an open card updates in place when the circuit changes', () => {
+    const rx = (a: string) => {
+      const c = emptyCircuit(1, 1);
+      c.steps[0].ops = [{ id: 'g1', gate: 'RX', wires: [0], params: [a] }];
+      return c;
+    };
+    const { rerender } = render(<Harness circuit={rx('pi/2')} />);
+    fireEvent.focus(btn('op'));
+    expect(tip()!.textContent).toContain('−i/√2');
+    rerender(<Harness circuit={rx('pi')} />);
+    expect(tip()!.textContent).toContain('θ = π');
+    expect(tip()!.textContent).not.toContain('√2');
   });
 });

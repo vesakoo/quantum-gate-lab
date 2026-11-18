@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import { forwardRef, type CSSProperties } from 'react';
 import { GATE_DOCS, type DocKey } from './gateDocs';
 import type { HereInfo } from './gateCardHere';
 import { ControlGlyph, GateBox } from './GateView';
@@ -17,7 +17,10 @@ type Props = {
 };
 
 /** Presentational gate card: static doc plus, for placed items, the "Here" section. */
-export default function GateCard({ id, docKey, here, pinned, side = 'right', style, onPointerEnter, onPointerLeave }: Props) {
+const GateCard = forwardRef<HTMLDivElement, Props>(function GateCard(
+  { id, docKey, here, pinned, side = 'right', style, onPointerEnter, onPointerLeave },
+  ref,
+) {
   const doc = GATE_DOCS[docKey];
   const glyph =
     docKey === 'ctl:on1' || docKey === 'ctl:on0' ? (
@@ -27,6 +30,7 @@ export default function GateCard({ id, docKey, here, pinned, side = 'right', sty
     );
   return (
     <div
+      ref={ref}
       role="tooltip"
       id={id}
       className="gate-card"
@@ -57,6 +61,7 @@ export default function GateCard({ id, docKey, here, pinned, side = 'right', sty
       {here ? (
         <div className="gate-card-here">
           <div>Here: {here.position}</div>
+          {here.basisOrder ? <div className="gate-card-small">{here.basisOrder}</div> : null}
           {here.angles?.map((a) => (
             <div key={a.name} className={a.valid ? undefined : 'invalid'}>
               {a.name} = {a.text}
@@ -78,4 +83,6 @@ export default function GateCard({ id, docKey, here, pinned, side = 'right', sty
       {pinned ? <div className="gate-card-small">Pinned · Esc to close</div> : null}
     </div>
   );
-}
+});
+
+export default GateCard;

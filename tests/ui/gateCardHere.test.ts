@@ -154,4 +154,18 @@ describe('cardHere', () => {
     expect(cardHere(c, { kind: 'op', opId: 'nope' })).toBeNull();
     expect(docKey(c, { kind: 'control', step: 0, wire: 0 })).toBeNull();
   });
+
+  it('reversed two-qubit gate states its basis order', () => {
+    const s = op('SWAP', [2, 0]);
+    expect(cardHere(circ(3, [[[s]]]), at(s))!.basisOrder).toBe('Basis order: q[2] q[0] (gate wire order)');
+    const t = op('SWAP', [0, 2]);
+    expect(cardHere(circ(3, [[[t]]]), at(t))!.basisOrder).toBeUndefined();
+  });
+
+  it('basis order suffix names its cause', () => {
+    const s = op('SWAP', [3, 1]);
+    const k = cardHere(circ(4, [[[s], [on1(0)]]]), at(s))!.control!;
+    expect(k.basisOrder).toBe('Basis order: q[0] q[3] q[1] (gate wire order)');
+  });
 });
+
