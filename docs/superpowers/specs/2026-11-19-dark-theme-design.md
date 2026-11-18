@@ -91,8 +91,9 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
   side with a clear fill plus outlined digit).** The digit passes on both parts (light 16:1 / 21:1,
   dark 8.0:1 / 15:1), but the fill level differs from the empty part by only 1.3:1 (light) and
   1.9:1 (dark), below the 3:1 of WCAG 1.4.11. This is the **one documented exception** to the
-  targets. Mitigation (my call): the exact value is also text — the Out box's accessible name
-  becomes `q[0] output: 1, P(1) = 60.0 %` and the hover title stays. The contrast test lists this
+  targets. Mitigation (my call): the exact value is also text — the Out box gets `role="img"` with
+  accessible name `q[0] output: 1, P(1) = 60.0 %` (a name on a role-less div is ignored by
+  screen readers), and the hover title stays. The contrast test lists this
   pair as an explicit, named exception and fails if any other exception appears.
 
 ## Design
@@ -119,21 +120,32 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
   (`MeshBasicMaterial` / `LineBasicMaterial`) materials at full opacity (the sphere fill may keep a
   fixed alpha only if its composited colour over `--panel` is what the token table measures), and
   a real silhouette outline circle (`--bloch-outline`, ≥ 3:1 vs `--panel`) is added, always facing
-  the camera. Axis/state labels are HTML with a solid `--raised` backing (no translucency), so their
+  the camera and placed at the perspective silhouette (distance r²/D toward the camera, radius
+  r·√(1 − r²/D²)); at the sphere's centre plane it shows as a double edge (seen in the preview).
+  Previewed side by side with today's sphere in both themes before implementation. Axis/state labels are HTML with a solid `--raised` backing (no translucency), so their
   contrast does not depend on the canvas behind them. In forced-colours mode `readBlochColors()`
   returns system colours (CanvasText for lines/outline/arrow, Canvas for the fill).
 - `MiniBloch` keeps its CSS classes; their rules use tokens.
+- Native buttons are styled from tokens (`--button-bg`, `--button-text`, `--button-border`,
+  hover) because Chrome's dark UA button (ButtonText on ButtonFace) is only 5.3:1.
+- The angle dialog and gate card get a `--border` edge: in dark, `--raised` cannot differ 3:1
+  from the backdrop while keeping 7:1 text, so the border carries the edge.
+- SVG glyphs inside gates (`stroke="#000"` today) use `--gate-glyph`, measured on `--gate-fill`.
 - Invalid gates get a non-colour cue in addition to red: a small "!" badge (CSS `::after`),
   itself ≥ 7:1 against its own background.
 - Opacity is no longer used to signal state (it breaks contrast):
   - Stale results (`.prob-chart`, `.ket-view`, `.bloch-strip` while recomputing): content stays at
     full contrast; after the existing 250 ms delay an "Updating…" badge appears in the panel header
-    (text ≥ 7:1), and the panel keeps `aria-busy`.
-  - Orphan control (no gate in its step): full-contrast dashed ring instead of 40 % opacity.
+    (text ≥ 7:1; in the Bloch strip absolutely positioned top-right). The badge is visual only
+    (`aria-hidden`); assistive tech gets the state from the panel's `aria-busy` and the existing
+    "Computing…" status, so there is no triple live-region chatter.
+  - Orphan control (no gate in its step): keeps its fill (filled = on 1, hollow = on 0) plus a
+    full-contrast dashed outer ring, instead of 40 % opacity.
   - Drag source (`.dragging`): full-contrast dashed outline placeholder instead of fading.
   - Euler table header (`thead th`, 0.7): uses `--muted`.
-- Focus and selection rings are drawn with a gap (outline-offset ≥ 2px) so they sit on the
-  surface, never directly against a gate outline or wire; "adjacent colour" for every ring and
+- Focus and selection rings are `outline`s (not box-shadow, which forced colours removes) drawn
+  with a gap so they sit on the surface, never directly against a gate outline or wire: selection
+  at offset 2px, focus at offset 5px, so a selected and focused element shows both; "adjacent colour" for every ring and
   graphic is defined as the surface it is drawn on (the gap guarantees this).
 
 ### Theme state and toggle
