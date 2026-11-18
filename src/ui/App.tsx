@@ -16,6 +16,7 @@ import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
 import { dropTarget, gridCollision } from './drop';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
 import KetView from './KetView';
+import ThemeToggle from './ThemeToggle';
 import { GateCardProvider } from './gateCardContext';
 import OperatorView from './OperatorView';
 import Palette from './Palette';
@@ -212,7 +213,10 @@ export default function App() {
   return (
     <main className={`app${blochSel ? ' with-panel' : ''}`}>
       <div className="app-main">
-        <h1>Quantum Gate Lab</h1>
+        <header className="app-header">
+          <h1>Quantum Gate Lab</h1>
+          <ThemeToggle />
+        </header>
         <DndContext
           sensors={sensors}
           collisionDetection={gridCollision}
