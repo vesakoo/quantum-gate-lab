@@ -19,7 +19,7 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
   drops below target.
 - Non-goals: more than two themes, user-picked accent colours, a high-contrast theme of our own
   (the OS forced-colours mode is supported instead), changing font sizes or layout.
-- Anti-goals: any colour pair below target in either theme (the one documented exception is the Out-box fill level, see below); meaning carried by colour alone;
+- Anti-goals: any colour pair below target in either theme (the two documented exceptions are the Out-box fill level and the light-theme 3D sphere, see below); meaning carried by colour alone;
   a flash of the wrong theme on load; a "white window" exception (the 3D panel is themed too).
 
 ## Accessibility targets (decided with the user: "no compromises")
@@ -113,18 +113,24 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
 ### Components
 
 - `ProbabilityChart.tsx`, `OutColumn.tsx`: SVG colour attributes replaced by CSS classes using tokens.
-- `blochScene.ts`: `createBlochScene(host, colors)` takes `{ sphere, outline, circle, axis, arrow }`
-  (hex numbers); a helper `readBlochColors()` reads them from computed token values on
-  `document.documentElement`. `BlochPanel` re-creates the scene when the theme changes.
-  So that rendered pixels equal the measured tokens, the sphere and lines use unlit
-  (`MeshBasicMaterial` / `LineBasicMaterial`) materials at full opacity (the sphere fill may keep a
-  fixed alpha only if its composited colour over `--panel` is what the token table measures), and
-  a real silhouette outline circle (`--bloch-outline`, ≥ 3:1 vs `--panel`) is added, always facing
-  the camera and placed at the perspective silhouette (distance r²/D toward the camera, radius
-  r·√(1 − r²/D²)); at the sphere's centre plane it shows as a double edge (seen in the preview).
-  Previewed side by side with today's sphere in both themes before implementation. Axis/state labels are HTML with a solid `--raised` backing (no translucency), so their
-  contrast does not depend on the canvas behind them. In forced-colours mode `readBlochColors()`
-  returns system colours (CanvasText for lines/outline/arrow, Canvas for the fill).
+- `blochScene.ts` has two rendering modes, chosen by theme (**user's choice 2026-11-19, from a
+  side-by-side preview of today's and the proposed sphere in both themes**):
+  - **Light: exactly today's sphere** (lit, translucent Phong fill, circles at 0.9 / 0.45 opacity,
+    today's colours and label styles). The user rejected even a minimally tuned version
+    (meridians at 0.8 opacity, deeper red arrow). This is the **second documented exception**:
+    the two vertical great circles reach only about 2.0:1 against the sphere, and the arrow about
+    3.0–3.8:1 depending on shading. Mitigation: the panel already shows the state in text (θ, φ,
+    probabilities, Euler table). The colours come from light tokens holding today's values
+    (`--sphere` #9fc4ee, `--bloch-circle` #4a6080, `--bloch-axis` #555555, `--arrow` #ff2020),
+    so no literals remain in code.
+  - **Dark: the proposed flat rendering.** Unlit (`MeshBasicMaterial` / `LineBasicMaterial`),
+    opaque lines, translucent fill of fixed alpha, a silhouette outline circle (`--bloch-outline`)
+    at the perspective silhouette (distance r²/D toward the camera, radius r·√(1 − r²/D²)), state
+    labels on a solid `--raised` backing. All pairs meet the targets (previewed: outline 6.5:1,
+    circles ≥ 4.3:1, axes 9.4:1, arrow ≥ 5.0:1, labels 13.5:1).
+  - `createBlochScene(host, { mode: 'lit' | 'flat', colors })`; `readBlochColors()` reads the
+    tokens; `BlochPanel` re-creates the scene on theme change. In forced-colours mode the flat mode
+    is used with system colours (CanvasText for lines/outline/arrow, Canvas for the fill).
 - `MiniBloch` keeps its CSS classes; their rules use tokens.
 - Native buttons are styled from tokens (`--button-bg`, `--button-text`, `--button-border`,
   hover) because Chrome's dark UA button (ButtonText on ButtonFace) is only 5.3:1.
