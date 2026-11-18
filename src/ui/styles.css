@@ -925,20 +925,23 @@ body {
   font-size: 13px;
 }
 
-.ket-view {
+.ket-view,
+.operator-view {
   margin-top: 16px;
   border: 1px solid var(--border, #ccc);
   border-radius: 4px;
   padding: 8px 12px;
 }
 
-.ket-view header {
+.ket-view header,
+.operator-view header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.ket-view h2 {
+.ket-view h2,
+.operator-view h2 {
   margin: 0;
   font-size: 15px;
 }

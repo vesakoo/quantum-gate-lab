@@ -16,6 +16,7 @@ import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
 import { dropTarget, gridCollision } from './drop';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
 import KetView from './KetView';
+import OperatorView from './OperatorView';
 import Palette from './Palette';
 import ProbabilityChart from './ProbabilityChart';
 import { useCircuit } from './useCircuit';
@@ -306,6 +307,7 @@ export default function App() {
         {sim ? (
           <ProbabilityChart probabilities={sim.probabilities} numQubits={sim.numQubits} stale={!simFresh || computing} />
         ) : null}
+        <OperatorView circuit={circuit} />
       </div>
       {blochSel && panelValid && panelBloch ? (
         <BlochPanel qubit={blochSel.qubit} step={blochSel.s} bloch={panelBloch} onClose={closeBloch} />
