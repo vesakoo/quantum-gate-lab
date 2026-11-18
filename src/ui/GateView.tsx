@@ -3,6 +3,8 @@ import { useDraggable } from '@dnd-kit/core';
 import type { ControlKind, Op } from '../model/circuit';
 import { parseAngle } from '../sim/angle';
 import { GATE_INFO, type GateId } from '../sim/gates';
+import { useGateCardTrigger } from './gateCardContext';
+import type { CardTarget } from './gateCardHere';
 
 /** Grid geometry (px). Shared with the grid, the Out column and later the Bloch strip. */
 export const COL_W = 56;
@@ -81,9 +83,10 @@ type GateViewProps = {
   onEditAngles: (opId: string) => void;
 };
 
-function useOpDrag(id: string, data: DragData) {
+function useOpDrag(id: string, data: DragData, target: CardTarget) {
   const d = useDraggable({ id, data });
-  return { ref: d.setNodeRef, props: { ...d.attributes, ...d.listeners }, dragging: d.isDragging };
+  const card = useGateCardTrigger(target, { describedBy: d.attributes['aria-describedby'] });
+  return { ref: d.setNodeRef, props: { ...d.attributes, ...d.listeners, ...card }, dragging: d.isDragging };
 }
 
 function EndHandle({
@@ -92,13 +95,12 @@ function EndHandle({
   op: Op; end: 0 | 1; name: string; style: CSSProperties; className: string;
   children?: ReactNode; onSelect: (e: MouseEvent) => void;
 }) {
-  const d = useOpDrag(`end:${op.id}:${end}`, { type: 'op-end', opId: op.id, end });
+  const d = useOpDrag(`end:${op.id}:${end}`, { type: 'op-end', opId: op.id, end }, { kind: 'op', opId: op.id });
   return (
     <div
       ref={d.ref}
       {...d.props}
       aria-label={name}
-      title={`Drag to move this end of ${GATE_INFO[op.gate].label}`}
       className={`${className}${d.dragging ? ' dragging' : ''}`}
       style={style}
       onClick={onSelect}
@@ -113,7 +115,7 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
   const qs = op.wires.map((w) => `q[${w}]`).join(', ');
   const invalid = hasInvalidAngle(op);
   const name = `${label}${sub ? ` ${sub}` : ''} on ${qs}, step ${step + 1}${invalid ? ' (invalid angle, skipped)' : ''}`;
-  const d = useOpDrag(`op:${op.id}`, { type: 'op', opId: op.id });
+  const d = useOpDrag(`op:${op.id}`, { type: 'op', opId: op.id }, { kind: 'op', opId: op.id });
   const select = (e: MouseEvent) => {
     e.stopPropagation();
     onSelect(op.id);
@@ -146,7 +148,6 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
             ref={d.ref}
             {...d.props}
             aria-label={name}
-            title="Barrier (visual divider)"
             className={cls('barrier')}
             style={{ left: CX - 8, top: w * ROW_H, width: 16, height: ROW_H }}
             onClick={select}
@@ -161,7 +162,6 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
           ref={d.ref}
           {...d.props}
           aria-label={name}
-          title={invalid ? `${name}: double-click to fix` : name}
           aria-invalid={invalid || undefined}
           className={cls(invalid ? 'gate invalid' : 'gate')}
           style={{ left: CX - GATE / 2, top: centerY(w) - GATE / 2, width: GATE, height: GATE }}
@@ -187,7 +187,6 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
           ref={d.ref}
           {...d.props}
           aria-label={name}
-          title={`${name} — the dot marks the H/control end`}
           className={cls('connector')}
           style={{ left: CX - 6, top, width: 12, height: span }}
           onClick={select}
@@ -218,7 +217,6 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
           ref={d.ref}
           {...d.props}
           aria-label={name}
-          title={`${name} — the dot marks the H/control end`}
           className={cls('gate b-block')}
           style={{ left: CX - GATE / 2, top: top - GATE / 2, width: GATE, height: span + GATE }}
           onClick={select}
@@ -247,7 +245,6 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
         ref={d.ref}
         {...d.props}
         aria-label={name}
-        title={name}
         className={cls('connector')}
         style={{ left: CX - 6, top, width: 12, height: span }}
         onClick={select}
@@ -293,14 +290,15 @@ export const ControlView = memo(function ControlView({
   onSelect: (step: number, wire: number) => void;
 }) {
   const d = useDraggable({ id: `control:${step}:${wire}`, data: { type: 'control', step, wire } satisfies DragData });
+  const card = useGateCardTrigger({ kind: 'control', step, wire }, { describedBy: d.attributes['aria-describedby'] });
   const name = `${ctlName(kind)} on q[${wire}], step ${step + 1}`;
   return (
     <div
       ref={d.setNodeRef}
       {...d.attributes}
       {...d.listeners}
+      {...card}
       aria-label={name}
-      title={active ? name : `${name} (no gate in this step — ignored)`}
       className={`ctl-ball ${kind}${active ? ' active' : ' orphan'}${selected ? ' selected' : ''}${d.isDragging ? ' dragging' : ''}`}
       style={{ left: CX - 9, top: centerY(wire) - 9, width: 18, height: 18 }}
       onClick={(e) => {

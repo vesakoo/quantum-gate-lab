@@ -16,6 +16,7 @@ import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
 import { dropTarget, gridCollision } from './drop';
 import { COL_W, ControlGlyph, GateBox, ROW_H, hasAngles, opLabel, type DragData } from './GateView';
 import KetView from './KetView';
+import { GateCardProvider } from './gateCardContext';
 import OperatorView from './OperatorView';
 import Palette from './Palette';
 import ProbabilityChart from './ProbabilityChart';
@@ -219,6 +220,7 @@ export default function App() {
           onDragEnd={onDragEnd}
           onDragCancel={() => setDragging(null)}
         >
+          <GateCardProvider circuit={circuit}>
           <Palette />
           <CircuitGrid
             circuit={circuit}
@@ -242,6 +244,7 @@ export default function App() {
               />
             ) : null}
           </CircuitGrid>
+          </GateCardProvider>
           <DragOverlay dropAnimation={null}>{overlay}</DragOverlay>
         </DndContext>
         <div className="grid-toolbar">
