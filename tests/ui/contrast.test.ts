@@ -25,7 +25,8 @@ const SURFACES: Record<string, { text: string[]; marks: string[]; via?: string }
   '--bg': { text: ['--text', '--muted'], marks: ['--focus', '--gate-border', '--border'] },
   '--raised': { text: ['--text', '--muted', '--danger'], marks: ['--border', '--focus'] },
   '--danger-bg': { text: ['--text', '--danger'], marks: ['--focus', '--danger'] },
-  '--gate-fill': { text: ['--gate-text'], marks: ['--gate-glyph'] },
+  '--danger': { text: ['--danger-bg'], marks: [] }, // the invalid gate's "!" badge
+  '--gate-fill': { text: ['--gate-text'], marks: [] },
   '--drop-target': { text: ['--text'], marks: ['--wire', '--gate-border', '--ctl'], via: '--panel' },
   '--button-bg': { text: ['--button-text'], marks: ['--focus'] },
   '--button-hover-bg': { text: ['--button-text'], marks: [] },

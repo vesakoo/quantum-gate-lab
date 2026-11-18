@@ -3,9 +3,9 @@ import { ROW_H } from './GateView';
 function MeterIcon() {
   return (
     <svg width="30" height="22" viewBox="0 0 30 22" aria-hidden="true" className="meter-icon">
-      <rect x="0.75" y="0.75" width="28.5" height="20.5" rx="2" fill="#fff" stroke="#000" strokeWidth="1.5" />
-      <path d="M5 17 A10 10 0 0 1 25 17" fill="none" stroke="#000" strokeWidth="1.5" />
-      <line x1="15" y1="17" x2="21" y2="7" stroke="#000" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="0.75" y="0.75" width="28.5" height="20.5" rx="2" className="meter-face" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5 17 A10 10 0 0 1 25 17" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      <line x1="15" y1="17" x2="21" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -22,7 +22,8 @@ export default function OutColumn({ numQubits, qubitP1 }: { numQubits: number; q
             <MeterIcon />
             <div
               className="out-box"
-              aria-label={`q[${q}] output`}
+              role="img"
+              aria-label={qubitP1 ? `q[${q}] output: ${bit}, P(1) = ${(p * 100).toFixed(1)} %` : `q[${q}] output: computing`}
               title={qubitP1 ? `q[${q}]: P(1) = ${(p * 100).toFixed(1)} %` : `q[${q}]: computing`}
             >
               <div className="out-fill" style={{ width: `${p * 100}%` }} />

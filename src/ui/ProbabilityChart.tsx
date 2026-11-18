@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import UpdatingBadge from './UpdatingBadge';
 
 export function basisLabel(index: number, n: number): string {
   return index.toString(2).padStart(n, '0');
@@ -19,7 +20,6 @@ const LEFT = 16 + LABEL_W * 8;
 const PLOT_W = 600;
 const RIGHT = 70;
 const TOP = 6;
-const BAR = '#1f4e9c';
 
 function pct(p: number): string {
   const v = Math.max(0, Math.min(1, p)) * 100;
@@ -46,6 +46,7 @@ export default function ProbabilityChart({ probabilities, numQubits, stale = fal
     <section className={stale ? 'prob-chart stale' : 'prob-chart'} aria-busy={stale || undefined}>
       <header>
         <h2>Output probabilities</h2>
+        {stale ? <UpdatingBadge /> : null}
         <label>
           <input type="checkbox" checked={hideZero} onChange={(e) => setHideZero(e.target.checked)} />
           Hide 0% rows
@@ -55,8 +56,8 @@ export default function ProbabilityChart({ probabilities, numQubits, stale = fal
         <svg width={LEFT + PLOT_W + RIGHT} height={height} role="img" aria-label="Output probabilities chart">
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={x(t)} x2={x(t)} y1={TOP} y2={TOP + plotH} stroke="#ddd" />
-              <text x={x(t)} y={TOP + plotH + 16} textAnchor="middle" fontSize="11" fill="#555">
+              <line x1={x(t)} x2={x(t)} y1={TOP} y2={TOP + plotH} className="chart-grid" />
+              <text x={x(t)} y={TOP + plotH + 16} textAnchor="middle" fontSize="11" className="chart-tick">
                 {t}
               </text>
             </g>
@@ -66,17 +67,17 @@ export default function ProbabilityChart({ probabilities, numQubits, stale = fal
             const y = TOP + r * ROW;
             return (
               <g key={idx}>
-                <text x={LEFT - 8} y={y + 14} textAnchor="end" fontSize="12" fontFamily="ui-monospace, Menlo, Consolas, monospace">
+                <text x={LEFT - 8} y={y + 14} textAnchor="end" fontSize="12" fontFamily="ui-monospace, Menlo, Consolas, monospace" className="chart-label">
                   {basisLabel(idx, numQubits)}
                 </text>
-                <rect x={LEFT} y={y + 2} width={Math.max(0, p * PLOT_W)} height={ROW - 4} fill={BAR} />
-                <text x={x(p * 100) + 6} y={y + 14} fontSize="11" fill="#333">
+                <rect x={LEFT} y={y + 2} width={Math.max(0, p * PLOT_W)} height={ROW - 4} className="chart-bar" />
+                <text x={x(p * 100) + 6} y={y + 14} fontSize="11" className="chart-value">
                   {pct(p)}
                 </text>
               </g>
             );
           })}
-          <line x1={LEFT} x2={LEFT} y1={TOP} y2={TOP + plotH} stroke="#888" />
+          <line x1={LEFT} x2={LEFT} y1={TOP} y2={TOP + plotH} className="chart-axis" />
         </svg>
       </div>
     </section>

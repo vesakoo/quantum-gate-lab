@@ -42,11 +42,11 @@ describe('CircuitGrid', () => {
     render(<App />);
     const box = screen.getByLabelText('Initial state of q[2]');
     expect(box).toHaveTextContent('|0⟩');
-    expect(screen.getByLabelText('q[2] output')).toHaveTextContent('0');
+    expect(screen.getByLabelText(/^q\[2\] output/)).toHaveTextContent('0');
     fireEvent.click(box);
     expect(box).toHaveTextContent('|1⟩');
-    expect(screen.getByLabelText('q[2] output')).toHaveTextContent('1');
-    expect(screen.getByLabelText('q[1] output')).toHaveTextContent('0');
+    expect(screen.getByLabelText(/^q\[2\] output/)).toHaveTextContent('1');
+    expect(screen.getByLabelText(/^q\[1\] output/)).toHaveTextContent('0');
   });
 
   it('adds and removes qubits', () => {

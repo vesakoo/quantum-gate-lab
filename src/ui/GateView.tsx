@@ -44,14 +44,14 @@ const CX = COL_W / 2;
 export function SwapGlyph({ size = 40 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden="true" className="swap-glyph">
-      <g stroke="#000" strokeWidth="2.5" strokeLinecap="round">
+      <g stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
         <line x1="13" y1="2" x2="27" y2="12" />
         <line x1="27" y1="2" x2="13" y2="12" />
         <line x1="13" y1="28" x2="27" y2="38" />
         <line x1="27" y1="28" x2="13" y2="38" />
         <line x1="20" y1="13" x2="20" y2="27" strokeWidth="1.5" />
       </g>
-      <path d="M16.5 17 L20 13 L23.5 17 M16.5 23 L20 27 L23.5 23" fill="none" stroke="#000" strokeWidth="1.5" />
+      <path d="M16.5 17 L20 13 L23.5 17 M16.5 23 L20 27 L23.5 23" fill="none" stroke="currentColor" strokeWidth="1.5" />
     </svg>
   );
 }

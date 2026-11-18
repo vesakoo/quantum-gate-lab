@@ -27,7 +27,6 @@
   /* gates and controls */
   --gate-fill: #a9cdf7;
   --gate-text: #000000;
-  --gate-glyph: #000000;
   --gate-border: #2a5fa3;
   --ctl: #a8560a;
   /* buttons */
@@ -85,7 +84,6 @@
   --select: #c3ccd6;
   --gate-fill: #1f4d86;
   --gate-text: #ffffff;
-  --gate-glyph: #ffffff;
   --gate-border: #8fbcf5;
   --ctl: #ffb562;
   --button-bg: #262d37;
@@ -114,6 +112,56 @@
 body {
   margin: 0;
   background: var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 5px;
+}
+
+button {
+  background: var(--button-bg);
+  color: var(--button-text);
+  border: 1px solid var(--button-border);
+  border-radius: 3px;
+}
+
+button:hover:not(:disabled) {
+  background: var(--button-hover-bg);
+}
+
+/* chart and meter marks */
+.chart-grid {
+  stroke: var(--grid-line);
+}
+
+.chart-axis {
+  stroke: var(--border);
+}
+
+.chart-tick {
+  fill: var(--muted);
+}
+
+.chart-label,
+.chart-value {
+  fill: var(--text);
+}
+
+.chart-bar {
+  fill: var(--chart-bar);
+}
+
+.meter-icon {
+  color: var(--wire);
+}
+
+.meter-icon .meter-face {
+  fill: var(--panel);
+}
+
+.swap-glyph {
+  color: var(--wire);
 }
 
 .app {
@@ -173,7 +221,8 @@ body {
 }
 
 .palette-item.dragging {
-  opacity: 0.4;
+  outline: 2px dashed var(--border);
+  outline-offset: 2px;
 }
 
 .more-toggle {
@@ -503,7 +552,8 @@ body {
 }
 
 .step-column .ctl-ball.orphan {
-  opacity: 0.4;
+  outline: 2px dashed var(--muted);
+  outline-offset: 2px;
 }
 
 .step-column .ctl-ball.selected {
@@ -522,7 +572,8 @@ body {
 }
 
 .dragging {
-  opacity: 0.35;
+  outline: 2px dashed var(--border);
+  outline-offset: 2px;
 }
 
 /* ---------- out column ---------- */
@@ -602,18 +653,63 @@ body {
   }
 }
 
-/* results from an older circuit (e.g. right after adding/removing a qubit) */
-.prob-chart,
-.ket-view,
+/* results from an older circuit (e.g. right after adding/removing a qubit): content keeps full
+   contrast; a visual "Updating…" badge appears after 250 ms (aria-busy carries the state) */
 .bloch-strip {
-  transition: opacity 0.15s ease;
+  position: relative;
 }
 
-.prob-chart.stale,
-.ket-view.stale,
-.bloch-strip.stale {
-  opacity: 0.45;
-  transition-delay: 0.25s;
+.updating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--badge-text);
+  background: var(--badge-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  white-space: nowrap;
+  visibility: hidden;
+  animation: updating-show 0s linear 0.25s forwards;
+}
+
+.updating-badge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  border-top-color: transparent;
+  animation: updating-spin 0.9s linear infinite;
+}
+
+.bloch-strip .updating-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  z-index: 2;
+}
+
+@keyframes updating-show {
+  to {
+    visibility: visible;
+  }
+}
+
+@keyframes updating-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .updating-badge::before {
+    animation: none;
+  }
 }
 
 .modal-backdrop {
@@ -946,7 +1042,7 @@ body {
 
 .bloch-euler-table thead th {
   font-weight: 400;
-  opacity: 0.7;
+  color: var(--muted);
 }
 
 .bloch-euler-table tbody th {
@@ -1094,6 +1190,22 @@ body {
   outline: 2px solid var(--danger);
   outline-offset: 0;
 }
+.gate.invalid::after {
+  content: '!';
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--danger-bg);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+}
+
 
 .sim-warnings {
   margin-top: 8px;
