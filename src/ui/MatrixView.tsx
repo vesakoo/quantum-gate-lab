@@ -16,13 +16,15 @@ export function MatrixView({ m, label }: { m: MatrixSpec; label?: string }) {
         </span>
       ) : null}
       <span className="matrix" role="table" style={{ gridTemplateColumns: `repeat(${n}, auto)` }}>
-        {m.rows.flatMap((row, r) =>
-          row.map((e, c) => (
-            <span key={`${r}:${c}`} role="cell">
-              <KetText text={e} />
-            </span>
-          )),
-        )}
+        {m.rows.map((row, r) => (
+          <span key={r} role="row" className="matrix-r">
+            {row.map((e, c) => (
+              <span key={c} role="cell">
+                <KetText text={e} />
+              </span>
+            ))}
+          </span>
+        ))}
       </span>
     </span>
   );

@@ -525,16 +525,25 @@ button:hover:not(:disabled) {
 
 .b-grip {
   z-index: 3;
-  width: 14px;
-  height: 14px;
+  width: 24px;
+  height: 24px;
   box-sizing: border-box;
   border-radius: 50%;
-  border: 2px solid var(--panel);
   background: transparent;
   cursor: ns-resize !important;
 }
 
-.b-grip.role {
+/* the visible 14 px dot; the 24 px box is the pointer target (WCAG 2.5.8) */
+.b-grip::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid var(--panel);
+}
+
+.b-grip.role::before {
   background: var(--wire);
   border-color: var(--wire);
   box-shadow: 0 0 0 1.5px var(--panel);
@@ -543,8 +552,8 @@ button:hover:not(:disabled) {
 /* H/control-end marker on the wires[0] box of a non-adjacent B (visual only) */
 .b-dot {
   position: absolute;
-  left: -8px;
-  top: calc(50% - 7px);
+  left: -13px;
+  top: calc(50% - 12px);
   pointer-events: none;
 }
 
@@ -1211,6 +1220,11 @@ button:hover:not(:disabled) {
   outline: 2px solid var(--danger);
   outline-offset: 0;
 }
+.gate.invalid:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 5px;
+}
+
 .gate.invalid::after {
   content: '!';
   position: absolute;
@@ -1288,6 +1302,10 @@ button:hover:not(:disabled) {
   border-radius: 3px;
   text-align: center;
   white-space: nowrap;
+}
+
+.matrix-r {
+  display: contents;
 }
 
 .matrix sup {
@@ -1369,4 +1387,85 @@ button:hover:not(:disabled) {
 
 .gate-card sup {
   font-size: 0.7em;
+}
+
+/* ---------- forced colours (Windows High Contrast): keep shapes and states visible ---------- */
+@media (forced-colors: active) {
+  .gate,
+  .gate-box {
+    border-color: CanvasText;
+  }
+
+  .ctl-ball,
+  .step-column .ctl-ball.active {
+    forced-color-adjust: none;
+    border-color: CanvasText;
+  }
+
+  .b-grip::before {
+    forced-color-adjust: none;
+    border-color: CanvasText;
+  }
+
+  .b-grip.role::before {
+    background: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .ctl-ball.on1,
+  .step-column .ctl-ball.on1.active {
+    background: CanvasText;
+  }
+
+  .ctl-ball.on0,
+  .step-column .ctl-ball.on0.active {
+    background: Canvas;
+  }
+
+  .connector::before,
+  .control-line,
+  .bloch-probs .bar span {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+
+  /* fill level in the system highlight colour; the digit keeps CanvasText with a Canvas halo so it
+     reads on both the fill and the empty part */
+  .out-fill {
+    forced-color-adjust: none;
+    background: Highlight;
+  }
+
+  .connector {
+    forced-color-adjust: none;
+  }
+
+  .selection {
+    border-color: Highlight;
+  }
+
+  :focus-visible {
+    outline-color: Highlight;
+  }
+
+  .chart-bar {
+    fill: CanvasText;
+  }
+
+  .gate.invalid::after {
+    forced-color-adjust: none;
+    background: CanvasText;
+    color: Canvas;
+  }
+
+  .out-digit {
+    forced-color-adjust: none;
+    color: CanvasText;
+    text-shadow:
+      0 0 2px Canvas,
+      1px 1px 0 Canvas,
+      -1px -1px 0 Canvas,
+      1px -1px 0 Canvas,
+      -1px 1px 0 Canvas;
+  }
 }

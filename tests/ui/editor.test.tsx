@@ -31,7 +31,7 @@ describe('CircuitGrid', () => {
     render(<App />);
     for (let q = 0; q < 4; q++) expect(screen.getByText(`q[${q}]`)).toBeInTheDocument();
     expect(screen.queryByText('q[4]')).not.toBeInTheDocument();
-    const headers = screen.getAllByRole('columnheader').map((h) => h.textContent);
+    const headers = Array.from(document.querySelectorAll('.step-head')).map((h) => h.textContent);
     expect(headers).toEqual(Array.from({ length: 12 }, (_, i) => String(i + 1)));
     expect(screen.getAllByText('Step')).toHaveLength(2);
     expect(screen.getByText('In')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('URL hash', () => {
     render(<App />);
     expect(screen.getByRole('alert').textContent).toMatch(/Could not load the circuit from the link: Invalid hash encoding/);
     expect(location.hash).toBe('#garbage!!');
-    expect(screen.getAllByRole('columnheader')).toHaveLength(12); // empty circuit shown
+    expect(document.querySelectorAll('.step-head')).toHaveLength(12); // empty circuit shown
     fireEvent.click(screen.getByLabelText('Initial state of q[0]'));
     expect(location.hash).not.toBe('#garbage!!');
     expect(location.hash.length).toBeGreaterThan(10);

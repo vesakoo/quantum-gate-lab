@@ -31,6 +31,13 @@ npx vitest run -t "test name"                # one test
 npm run typecheck
 ```
 
+## Themes and accessibility
+
+- Light and dark theme. The first visit follows the OS (`prefers-color-scheme`), dark when the OS prefers dark or says nothing; the header button ("Switch to light/dark theme") switches and remembers the choice. A small script in `index.html` applies the theme before the first paint, so there is no flash.
+- Both themes meet WCAG 2.2 AAA text contrast (7:1) and 3:1 for UI parts and graphics, with two documented exceptions chosen on purpose: the soft Out-box fill level (the exact P(1) is in the box's accessible name and tooltip) and the light theme's 3D Bloch sphere, kept exactly as before (its state is also given as numbers in the panel). The dark theme draws the 3D sphere flat with a full-contrast outline.
+- State is never shown by fading: recomputed results show an "Updating…" badge, orphan controls a dashed ring, invalid gates a "!" badge as well as red. Windows High Contrast (forced colours) keeps gates, wires, controls, selection and focus visible.
+- `npm test` checks every colour pair of both themes from `src/ui/styles.css` (all colours are tokens there). `npm run a11y` builds the app, opens it in Chrome in both themes, runs axe (WCAG 2.2 A/AA/AAA rules), measures rendered pixels where axe cannot (SVG, canvas, overlapping text, focus rings), walks every keyboard focus stop and checks forced colours; screenshots and the full report go to `a11y-report/`.
+
 ## Conventions
 
 - q[0] is the leftmost (most significant) bit: `0100` means q1 = 1.

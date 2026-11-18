@@ -230,7 +230,7 @@ export const GateView = memo(function GateView({ op, step, controlled, selected,
             end={i as 0 | 1}
             name={`B ${i === 0 ? 'control' : 'target'} end on q[${w}], step ${step + 1}`}
             className={`b-grip${i === 0 ? ' role' : ''}`}
-            style={{ left: CX - 7, top: centerY(w) - 7 }}
+            style={{ left: CX - 12, top: centerY(w) - 12 }}
             onSelect={select}
           />
         ))}

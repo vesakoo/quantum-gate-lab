@@ -120,3 +120,22 @@ describe('non-colour state cues', () => {
     expect(r?.[1]).toMatch(/border:\s*1px solid var\(--button-border\)/);
   });
 });
+
+describe('audit findings (dark-theme plan, Task 5 iteration 1)', () => {
+  it('invalid gates keep the focus ring offset', () => {
+    const r = rules().find(([sel]) => sel.includes('.gate.invalid:focus-visible'));
+    expect(r?.[1]).toMatch(/outline:\s*2px solid var\(--focus\)/);
+    expect(r?.[1]).toMatch(/outline-offset:\s*5px/);
+  });
+
+  it('B grips have a 24 px target', () => {
+    const r = rules().find(([sel]) => sel === '.b-grip');
+    expect(px(/width:\s*([\d.]+)px/.exec(r?.[1] ?? '')?.[1])).toBeGreaterThanOrEqual(24);
+    expect(px(/height:\s*([\d.]+)px/.exec(r?.[1] ?? '')?.[1])).toBeGreaterThanOrEqual(24);
+  });
+
+  it('formula paragraphs are named with a role that allows a name', () => {
+    render(<KetView amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} />);
+    expect(screen.getByRole('math', { name: 'Output state in ket notation' })).toBeTruthy();
+  });
+});

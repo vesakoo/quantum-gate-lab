@@ -68,7 +68,7 @@ export default function KetView({ amplitudes, purity, numQubits, stale = false }
       </header>
       {ket ? (
         <>
-          <p className="ket" aria-label="Output state in ket notation" title={`|ψ⟩ = ${ket.text}`}>
+          <p className="ket" role="math" aria-label="Output state in ket notation" title={`|ψ⟩ = ${ket.text}`}>
             |ψ⟩ = <KetText text={ket.text} />
           </p>
           <p className="ket-note">Global phase dropped · q[0] is the leftmost bit</p>
