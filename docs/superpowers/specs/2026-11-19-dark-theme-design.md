@@ -128,7 +128,7 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
     at the perspective silhouette (distance r²/D toward the camera, radius r·√(1 − r²/D²)), state
     labels on a solid `--raised` backing. All pairs meet the targets (previewed: outline 6.5:1,
     circles ≥ 4.3:1, axes 9.4:1, arrow ≥ 5.0:1, labels 13.5:1).
-  - `createBlochScene(host, { mode: 'lit' | 'flat', colors })`; `readBlochColors()` reads the
+  - `createBlochScene(host, { mode: 'lit' | 'flat', colors })`; `readBlochStyle()` reads the
     tokens; `BlochPanel` re-creates the scene on theme change. In forced-colours mode the flat mode
     is used with system colours (CanvasText for lines/outline/arrow, Canvas for the fill).
 - `MiniBloch` keeps its CSS classes; their rules use tokens.
@@ -176,7 +176,7 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
    test fails if any token used in a pair is missing in either theme.
 2. **No stray colours test**: `styles.css` outside the token/forced-colours blocks and all
    `src/ui/**/*.tsx` contain no colour literals (hex, `rgb(`, `hsl(`, named colours in
-   fill/stroke), except `blochScene.ts`, which gets colours only from `readBlochColors`.
+   fill/stroke), except `blochScene.ts`, which gets colours only from `readBlochStyle`.
 3. **Theme logic tests**: initial theme from storage / OS light / OS dark / no preference;
    toggle stores and applies; OS change followed only without a stored choice; storage errors
    tolerated; the pre-paint script and `initialTheme` agree.
