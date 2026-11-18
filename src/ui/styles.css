@@ -1057,3 +1057,80 @@ body {
 .matrix sup {
   font-size: 0.7em;
 }
+
+/* gate info card */
+.gate-card {
+  position: fixed;
+  z-index: 50;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
+  padding: 10px 12px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--grid-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(20, 30, 50, 0.16);
+  font-size: 13px;
+  line-height: 1.45;
+  animation: gate-card-in 0.12s ease-out;
+}
+
+@keyframes gate-card-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gate-card { animation: none; }
+}
+
+.gate-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.gate-card-glyph .gate-box {
+  width: 28px;
+  height: 28px;
+}
+
+.gate-card-desc {
+  margin: 0 0 6px;
+}
+
+.gate-card-basis {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.gate-card-here {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--grid-border);
+}
+
+.gate-card-here .invalid,
+.gate-card-note {
+  color: #b3261e;
+}
+
+.gate-card-proj {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.gate-card-small {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.gate-card sup {
+  font-size: 0.7em;
+}
