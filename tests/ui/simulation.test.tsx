@@ -81,7 +81,7 @@ describe('App with a lagging worker result', () => {
     const { container } = render(<App />);
     const w = FakeWorker.last!;
     act(() => w.reply(w.posted[0].id));
-    expect(screen.getByLabelText('q[0] output')).toHaveTextContent('0');
+    expect(screen.getByLabelText(/^q\[0\] output/)).toHaveTextContent('0');
     expect(chartLabels(container)).toContain('0000');
 
     fireEvent.click(screen.getByRole('button', { name: 'Remove q[3]' }));
@@ -91,14 +91,14 @@ describe('App with a lagging worker result', () => {
     expect(chart.classList.contains('stale')).toBe(true);
     expect(chartLabels(container)).toContain('0000');
     expect(container.querySelector('.bloch-strip')?.classList.contains('stale')).toBe(true);
-    expect(screen.getByLabelText('q[0] output')).toHaveTextContent('');
+    expect(screen.getByLabelText(/^q\[0\] output/)).toHaveTextContent('');
     expect(screen.getByText('Computing…')).toBeInTheDocument();
 
     act(() => w.reply(w.posted[1].id));
     expect(container.querySelector('.prob-chart')?.classList.contains('stale')).toBe(false);
     expect(chartLabels(container)).toContain('000');
     expect(chartLabels(container)).not.toContain('0000');
-    expect(screen.getByLabelText('q[0] output')).toHaveTextContent('0');
+    expect(screen.getByLabelText(/^q\[0\] output/)).toHaveTextContent('0');
     expect(screen.queryByText('Computing…')).not.toBeInTheDocument();
   });
 });

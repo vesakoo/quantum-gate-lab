@@ -104,3 +104,11 @@ describe('MatrixView', () => {
     expect(screen.getAllByRole('cell')).toHaveLength(4);
   });
 });
+
+describe('MatrixView structure', () => {
+  it('puts cells in rows', () => {
+    render(<MatrixView m={GATE_DOCS.H.matrix!} />);
+    expect(screen.getAllByRole('row')).toHaveLength(2);
+    for (const row of screen.getAllByRole('row')) expect(row.querySelectorAll('[role="cell"]')).toHaveLength(2);
+  });
+});

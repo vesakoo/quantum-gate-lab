@@ -30,7 +30,7 @@ export default function OperatorView({ circuit }: { circuit: Circuit }) {
           </button>
         </div>
       </header>
-      <p className="ket" aria-label="Circuit as operators formula">
+      <p className="ket" role="math" aria-label="Circuit as operators formula">
         {text}
       </p>
       <p className="ket-note">Last step on the left · q[0] is the leftmost factor</p>

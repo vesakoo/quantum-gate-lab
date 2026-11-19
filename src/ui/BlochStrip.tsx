@@ -1,4 +1,5 @@
 import type { Bloch } from '../sim/backend';
+import UpdatingBadge from './UpdatingBadge';
 import { COL_W } from './GateView';
 import MiniBloch from './MiniBloch';
 
@@ -41,6 +42,7 @@ export default function BlochStrip({ bloch, numQubits, numSteps, inW, outW, sele
         gridAutoRows: `${STRIP_ROW_H}px`,
       }}
     >
+      {stale ? <UpdatingBadge /> : null}
       {Array.from({ length: rows }, (_, q) =>
         Array.from({ length: cols }, (_, s) => (
           <div

@@ -106,7 +106,7 @@ export default function CircuitGrid({
           <span className="corner-bl">In</span>
         </div>
         {steps.map((_, si) => (
-          <div key={si} role="columnheader" className="step-head" style={{ gridColumn: si + 2, gridRow: 1 }}>
+          <div key={si} className="step-head" style={{ gridColumn: si + 2, gridRow: 1 }}>
             {si + 1}
           </div>
         ))}

@@ -1,0 +1,14 @@
+{
+  "numQubits": 4,
+  "initial": [0, 0, 0, 0],
+  "steps": [
+    { "ops": [{ "id": "h0", "gate": "H", "wires": [0], "params": [] }, { "id": "rx", "gate": "RX", "wires": [2], "params": ["foo"] }], "controls": [] },
+    { "ops": [{ "id": "x1", "gate": "X", "wires": [1], "params": [] }], "controls": [{ "wire": 0, "kind": "on1" }, { "wire": 3, "kind": "on0" }] },
+    { "ops": [{ "id": "sw", "gate": "SWAP", "wires": [3, 1], "params": [] }], "controls": [] },
+    { "ops": [], "controls": [{ "wire": 2, "kind": "on1" }] },
+    { "ops": [{ "id": "b0", "gate": "B", "wires": [0, 1], "params": [] }, { "id": "ry", "gate": "RY", "wires": [3], "params": ["pi/3"] }], "controls": [] },
+    { "ops": [{ "id": "m0", "gate": "MEASURE", "wires": [0], "params": [] }], "controls": [] },
+    { "ops": [], "controls": [] },
+    { "ops": [], "controls": [] }
+  ]
+}

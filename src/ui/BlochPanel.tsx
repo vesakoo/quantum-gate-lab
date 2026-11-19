@@ -5,6 +5,7 @@ import type { BlochScene } from './blochScene';
 import { formatKet, qubitAmplitudes } from './ket';
 import { KetText } from './KetView';
 import { blochPolar, eulerRows, withDegrees } from './polar';
+import { useTheme } from './theme';
 
 type Props = {
   qubit: number;
@@ -23,15 +24,16 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
   const scene = useRef<BlochScene | null>(null);
   const latest = useRef(bloch);
   latest.current = bloch;
+  const [theme] = useTheme();
 
   useEffect(() => {
     // jsdom (tests) and WebGL-less browsers: numbers only, never load three.js
     if (typeof WebGLRenderingContext === 'undefined') return;
     let cancelled = false;
     import('./blochScene')
-      .then(({ createBlochScene }) => {
+      .then(({ createBlochScene, readBlochStyle }) => {
         if (cancelled || !host.current) return;
-        const s = createBlochScene(host.current);
+        const s = createBlochScene(host.current, readBlochStyle());
         if (!s) return;
         scene.current = s;
         s.update(latest.current);
@@ -44,7 +46,8 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
       scene.current?.dispose();
       scene.current = null;
     };
-  }, []);
+    // re-create with the new colours and rendering mode when the theme changes
+  }, [theme]);
 
   useEffect(() => {
     scene.current?.update(bloch);
