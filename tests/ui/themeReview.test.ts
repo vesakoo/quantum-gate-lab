@@ -63,7 +63,7 @@ describe('final review findings', () => {
   });
 
   it('M1 (re-graded): forced colours recolour the selected and orphan control rings', () => {
-    expect(forced()).toMatch(/\.step-column \.ctl-ball\.selected[^{]*\{[^}]*outline-color:\s*Highlight/);
-    expect(forced()).toMatch(/\.step-column \.ctl-ball\.orphan[^{]*\{[^}]*outline-color:\s*CanvasText/);
+    expect(forced()).toMatch(/\.step-column \.ctl-ball\.selected::after[^{]*\{[^}]*border-color:\s*Highlight/);
+    expect(forced()).toMatch(/\.step-column \.ctl-ball\.orphan::after[^{]*\{[^}]*border-color:\s*CanvasText/);
   });
 });

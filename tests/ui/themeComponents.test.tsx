@@ -91,10 +91,12 @@ describe('non-colour state cues', () => {
   });
 
   it('orphan control keeps its fill and gets a dashed ring', () => {
-    const r = rules().find(([sel]) => sel.includes('.ctl-ball.orphan'));
-    expect(r?.[1]).toMatch(/outline:\s*2px dashed var\(--muted\)/);
-    expect(r?.[1]).toMatch(/outline-offset:\s*2px/);
+    const r = rules().find(([sel]) => sel === '.step-column .ctl-ball.orphan::after');
+    expect(r?.[1]).toMatch(/border:\s*2px dashed var\(--muted\)/);
     expect(r?.[1]).not.toMatch(/background/);
+    // the cue must not be an outline: an outline would replace the focus ring while focused
+    const bad = rules().filter(([sel, body]) => /\.ctl-ball\.(orphan|selected)(?!::)/.test(sel) && /outline/.test(body) && !/forced/.test(sel));
+    expect(bad.map(([sel]) => sel)).toEqual([]);
   });
 
   it('ring rules', () => {
@@ -110,7 +112,7 @@ describe('non-colour state cues', () => {
       if (/outline\s*:/.test(body) && (!off || px(off[1]) !== want)) bad.push(`${sel}: offset ${off?.[1]} (want ${want})`);
     }
     expect(bad).toEqual([]);
-    expect(rules().some(([sel, body]) => sel === ':focus-visible' && /outline:\s*2px solid var\(--focus\)/.test(body))).toBe(true);
+    expect(rules().some(([sel, body]) => sel === ':focus-visible' && /outline:\s*3px solid var\(--focus\)/.test(body))).toBe(true);
   });
 
   it('buttons use the button tokens', () => {
@@ -124,7 +126,7 @@ describe('non-colour state cues', () => {
 describe('audit findings (dark-theme plan, Task 5 iteration 1)', () => {
   it('invalid gates keep the focus ring offset', () => {
     const r = rules().find(([sel]) => sel.includes('.gate.invalid:focus-visible'));
-    expect(r?.[1]).toMatch(/outline:\s*2px solid var\(--focus\)/);
+    expect(r?.[1]).toMatch(/outline:\s*3px solid var\(--focus\)/);
     expect(r?.[1]).toMatch(/outline-offset:\s*5px/);
   });
 

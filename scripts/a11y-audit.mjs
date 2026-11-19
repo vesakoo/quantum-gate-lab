@@ -37,6 +37,7 @@ const COVERED = [
   [cls('theme-toggle-icon'), 'button text'],
   [/\.more-toggle(?![\w-])/, 'button text'],
   [/^#\\:r[0-9a-z]+\\:-title$/, 'dialog title'],
+  [/\.gate-card-(desc|proj|here)(?![\w-])/, 'card text'],
 ];
 
 const failures = [];
@@ -318,18 +319,30 @@ async function focusWalk(page, theme) {
     if (info.covered) fail(theme, state, 'focus not obscured', 'ring covered by the gate card or a dialog');
     if (info.box.y < 0 || info.box.y > 2000) continue;
     const img = decode(await page.screenshot());
-    // sample only the ring's top edge, leaving out the middle columns: horizontal wires run through
-    // the element's vertical centre and control/connector lines through its horizontal centre, so
-    // neither can stand in for the ring
-    const cx = info.box.x + info.box.width / 2;
-    const away = (x) => Math.abs(x - cx) < 5;
-    const top = info.box.y - info.offset - info.width;
-    const ringBand = { x: info.box.x - info.offset, y: top, width: info.box.width + 2 * info.offset, height: info.width };
-    const gapBand = { x: info.box.x, y: info.box.y - info.offset + 1, width: info.box.width, height: Math.max(1, info.offset - 2) };
-    const surface = mode(pixelsIn(img, gapBand, (x) => away(x)));
-    let best = 1;
-    for (const c of pixelsIn(img, ringBand, (x) => away(x))) best = Math.max(best, contrast(c, surface));
-    gate(theme, state, 'focus ring vs surface', best, 3);
+    // WCAG 2.4.13: the same pixels with and without the focus ring must differ by ≥ 3:1. Take the
+    // ring area (between the element box grown by its offset and by offset + width), screenshot it
+    // again with the outline suppressed, and use the median per-pixel contrast — robust against
+    // wires, neighbours and page edges that a fixed "surface" sample could land on.
+    await page.evaluate(() => document.activeElement?.setAttribute('data-audit-noring', ''));
+    await page.addStyleTag({ content: '[data-audit-noring]{outline:none!important}' }).catch(() => {});
+    const plain = decode(await page.screenshot());
+    await page.evaluate(() => document.activeElement?.removeAttribute('data-audit-noring'));
+    // the whole box grown by the ring: a round element's ring follows its radius, so it also runs
+    // inside the square the offset alone would mark out; the element itself does not change
+    const ringArea = grow(info.box, info.offset + info.width + 1);
+    const ratios = [];
+    const x0 = Math.max(0, Math.floor(ringArea.x)), y0 = Math.max(0, Math.floor(ringArea.y));
+    const x1 = Math.min(img.w, Math.ceil(ringArea.x + ringArea.width)), y1 = Math.min(img.h, Math.ceil(ringArea.y + ringArea.height));
+    for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) ratios.push(contrast(img.at(xx, yy), plain.at(xx, yy)));
+    // WCAG 2.4.13 area: at least the area of a 2 CSS px perimeter of the focused element's ring,
+    // taken as the smallest ring it could be (a circle around a round element), minus 20 % for wires
+    // crossing it; a ring hidden by neighbours or clipping fails
+    const changed = ratios.filter((x) => x >= 3).length;
+    const needed = 0.8 * Math.PI * (Math.min(info.box.width, info.box.height) + 2 * info.offset + info.width) * 2;
+    ratios.sort((a, b) => b - a);
+    const typical = changed ? ratios[Math.floor(changed / 2)] : ratios[0] ?? 1;
+    if (changed >= needed) note(theme, state, 'focus ring change (focused vs unfocused)', `${changed} px ≥ 3:1 (need ${Math.round(needed)}), typical ${typical.toFixed(2)}:1`);
+    else fail(theme, state, 'focus ring change (focused vs unfocused)', `${changed} px ≥ 3:1, need ${Math.round(needed)}`);
   }
   note(theme, 'focus walk', 'stops', String(seen.size));
 }
@@ -407,6 +420,11 @@ try {
     if (!(await page.textContent('.gate-card'))?.includes('CC̄X') && !(await page.textContent('.gate-card'))?.includes('=')) fail(theme, 'card', 'card Here section', 'no block matrix shown');
     img = await shot(page, theme, 'card');
     await axe(page, theme, 'card');
+    // the card floats over the grid, so axe cannot resolve its text background: measure it
+    for (const el of await page.$$('.gate-card-desc, .gate-card-here > div, .gate-card-proj, .gate-card-basis div')) {
+      const b = await el.boundingBox();
+      if (b) gate(theme, 'card', `card text ${(await el.textContent())?.slice(0, 24)}`, measure(img, grow(b, -1), b), 7);
+    }
     await page.mouse.move(2, 2);
     await page.waitForTimeout(300);
 

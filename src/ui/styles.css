@@ -115,7 +115,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 3px solid var(--focus);
   outline-offset: 5px;
 }
 
@@ -589,14 +589,23 @@ button:disabled {
   background: var(--ctl);
 }
 
-.step-column .ctl-ball.orphan {
-  outline: 2px dashed var(--muted);
-  outline-offset: 2px;
+/* orphan and selected rings are drawn by ::after (2px out, 2px wide), not with outline, so the
+   keyboard focus ring (an outline at 5px) is never replaced by them */
+.step-column .ctl-ball.orphan::after,
+.step-column .ctl-ball.selected::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  pointer-events: none;
 }
 
-.step-column .ctl-ball.selected {
-  outline: 2px solid var(--select);
-  outline-offset: 2px;
+.step-column .ctl-ball.orphan::after {
+  border: 2px dashed var(--muted);
+}
+
+.step-column .ctl-ball.selected::after {
+  border: 2px solid var(--select);
 }
 
 .selection {
@@ -887,7 +896,7 @@ button:disabled {
 }
 
 .mini-bloch:focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 3px solid var(--focus);
   outline-offset: 5px;
 }
 
@@ -1235,7 +1244,7 @@ button:disabled {
   outline-offset: 0;
 }
 .gate.invalid:focus-visible {
-  outline: 2px solid var(--focus);
+  outline: 3px solid var(--focus);
   outline-offset: 5px;
 }
 
@@ -1421,12 +1430,12 @@ button:disabled {
     border-color: CanvasText;
   }
 
-  .step-column .ctl-ball.selected {
-    outline-color: Highlight;
+  .step-column .ctl-ball.selected::after {
+    border-color: Highlight;
   }
 
-  .step-column .ctl-ball.orphan {
-    outline-color: CanvasText;
+  .step-column .ctl-ball.orphan::after {
+    border-color: CanvasText;
   }
 
   .b-grip.role::before {
