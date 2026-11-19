@@ -73,13 +73,17 @@ const EXCEPTIONS: Pair[] = [
     bgAlpha: 0.18,
     fgAlpha: 0.45,
   }),
+  p('--bloch-label-axis', '--sphere', T, "light 3D axis label over the sphere: today's sphere kept, user choice 2026-11-19", {
+    theme: 'light',
+    bgAlpha: 0.18,
+  }),
 ];
 
 /** Tokens that carry no information on their own (reason in the comment). */
 const DECORATIVE = [
   '--shadow', // depth cue under dialog/card; the --border edge carries the boundary
   '--divider', // separators between rows of the palette
-  '--grid-line', // hairlines between grid header cells; wires and gate outlines carry the structure
+  '--grid-line', // separators (header rule, In/Out edges, corner diagonals, chart guides): decorative by user choice 2026-11-19; wires and gate outlines carry the structure
   '--bloch-outline', // light: unused by the lit sphere (measured in dark)
 ];
 

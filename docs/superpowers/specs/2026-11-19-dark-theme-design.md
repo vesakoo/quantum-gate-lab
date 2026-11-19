@@ -90,11 +90,15 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
 - **Out column: soft fill, no line, as today (the user's final choice, after comparing it side by
   side with a clear fill plus outlined digit).** The digit passes on both parts (light 16:1 / 21:1,
   dark 8.0:1 / 15:1), but the fill level differs from the empty part by only 1.3:1 (light) and
-  1.9:1 (dark), below the 3:1 of WCAG 1.4.11. This is the **one documented exception** to the
+  1.9:1 (dark), below the 3:1 of WCAG 1.4.11. This is the **first documented exception** to the
   targets. Mitigation (my call): the exact value is also text — the Out box gets `role="img"` with
   accessible name `q[0] output: 1, P(1) = 60.0 %` (a name on a role-less div is ignored by
   screen readers), and the hover title stays. The contrast test lists this
   pair as an explicit, named exception and fails if any other exception appears.
+- **Grid separators are decorative (user choice 2026-11-19).** The thin `--grid-line` rules (header
+  underline, In/Out column edges, corner diagonals, chart guides) measure 2.56:1 (light) and 1.77:1
+  (dark). They are not measured against 3:1: wires, gate outlines and the axis carry the structure,
+  and raising them would make both themes visibly heavier.
 
 ## Design
 
@@ -119,7 +123,9 @@ current light theme also misses that bar (gate labels 6.4:1, help text 5.6:1, co
     today's colours and label styles). The user rejected even a minimally tuned version
     (meridians at 0.8 opacity, deeper red arrow). This is the **second documented exception**:
     the two vertical great circles reach only about 2.0:1 against the sphere, and the arrow about
-    3.0–3.8:1 depending on shading. Mitigation: the panel already shows the state in text (θ, φ,
+    3.0–3.8:1 depending on shading. The light axis labels (x, y, z) are part of this exception too
+    (user choice 2026-11-19): where they overlap the lit sphere they measure about 6.2–6.8:1 instead
+    of 7:1. Mitigation: the panel already shows the state in text (θ, φ,
     probabilities, Euler table). The colours come from light tokens holding today's values
     (`--sphere` #9fc4ee, `--bloch-circle` #4a6080, `--bloch-axis` #555555, `--arrow` #ff2020),
     so no literals remain in code.

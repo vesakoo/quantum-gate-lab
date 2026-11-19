@@ -285,7 +285,7 @@ async function blochChecks(page, img, theme, state) {
     const b = await l.boundingBox();
     const kind = await l.evaluate((e) => (e.classList.contains('axis') ? 'axis' : 'state'));
     // state labels sit on their own backing; axis labels sit on the canvas around the sphere
-    gate(theme, state, `3D ${kind} label`, measure(img, grow(b, -1), kind === 'state' ? grow(b, -1) : grow(b, 2)), 7);
+    gate(theme, state, `3D ${kind} label`, measure(img, grow(b, -1), kind === 'state' ? grow(b, -1) : grow(b, 2)), 7, kind === 'axis' ? lightEx : undefined);
   }
 }
 
