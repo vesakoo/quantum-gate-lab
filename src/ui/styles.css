@@ -1048,6 +1048,8 @@ button:disabled {
 .bloch-coords dt {
   font-weight: 700;
   font-style: italic;
+  /* same face as the formula below, so θ and φ look the same in both places */
+  font-family: ui-monospace, Menlo, Consolas, monospace;
 }
 
 .bloch-coords dd {

@@ -55,6 +55,8 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
 
   const title = blochLabel(qubit, step);
   const polar = blochPolar(bloch);
+  // an angle is undefined when the vector has no length (θ and φ) or sits on a pole (φ)
+  const undefinedAngle = polar.theta === null ? 'undefined (length 0)' : 'undefined (at a pole)';
   const probs: [string, number][] = [
     ['|0⟩', bloch.probs.zero],
     ['|1⟩', bloch.probs.one],
@@ -92,9 +94,9 @@ export default function BlochPanel({ qubit, step, bloch, onClose }: Props) {
       <p className="bloch-subhead">Polar (Euler) form</p>
       <dl className="bloch-coords bloch-polar">
         <dt>θ</dt>
-        <dd data-testid="bloch-theta">{polar.theta === null ? '—' : withDegrees(polar.theta)}</dd>
+        <dd data-testid="bloch-theta">{polar.theta === null ? undefinedAngle : withDegrees(polar.theta)}</dd>
         <dt>φ</dt>
-        <dd data-testid="bloch-phi">{polar.phi === null ? '—' : withDegrees(polar.phi)}</dd>
+        <dd data-testid="bloch-phi">{polar.phi === null ? undefinedAngle : withDegrees(polar.phi)}</dd>
       </dl>
       {bloch.mixed ? (
         <p className="bloch-euler" data-testid="bloch-euler-mixed">

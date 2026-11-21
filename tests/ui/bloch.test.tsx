@@ -106,8 +106,8 @@ describe('Bloch strip', () => {
     const panel = screen.getByRole('complementary', { name: 'Bloch sphere q[1] after step 2' });
     expect(within(panel).getByText('entangled / mixed')).toBeInTheDocument();
     expect(within(panel).getByTestId('bloch-length')).toHaveTextContent('0.000');
-    expect(within(panel).getByTestId('bloch-theta')).toHaveTextContent('—');
-    expect(within(panel).getByTestId('bloch-phi')).toHaveTextContent('—');
+    expect(within(panel).getByTestId('bloch-theta')).toHaveTextContent(/^undefined \(length 0\)$/);
+    expect(within(panel).getByTestId('bloch-phi')).toHaveTextContent(/^undefined \(length 0\)$/);
     expect(within(panel).queryByTestId('bloch-euler')).not.toBeInTheDocument();
     expect(within(panel).getByTestId('bloch-euler-mixed')).toHaveTextContent('no single |ψ⟩');
     expect(within(panel).queryByTestId('bloch-euler-table')).not.toBeInTheDocument();
@@ -138,7 +138,7 @@ describe('Bloch strip', () => {
     fireEvent.click(screen.getByRole('button', { name: 'q[0] input' }));
     const p0 = within(screen.getByRole('complementary', { name: 'Bloch sphere q[0] input' }));
     expect(p0.getByTestId('bloch-theta')).toHaveTextContent('0 (0.0°)');
-    expect(p0.getByTestId('bloch-phi')).toHaveTextContent('—');
+    expect(p0.getByTestId('bloch-phi')).toHaveTextContent(/^undefined \(at a pole\)$/);
     expect(p0.getByTestId('bloch-euler')).toHaveTextContent('|ψ⟩ = |0⟩');
   });
 });
