@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "a11y": "node scripts/a11y-audit.mjs"
+    "a11y": "node scripts/a11y-audit.mjs",
+    "deploy": "bash scripts/deploy.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
