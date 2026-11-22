@@ -248,6 +248,14 @@ describe('globalPhase', () => {
   });
   it('uses the first non-zero amplitude', () => expect(globalPhase([0, 0, 0, r, r, 0])).toEqual({ text: 'i', degrees: '90.0°' }));
   it('all-zero amplitudes give null', () => expect(globalPhase([0, 0, 0, 0])).toBeNull());
+  it('γ = π reads 180.0° even when rounding noise puts atan2 at −π', () => {
+    expect(globalPhase(amp(-1, -1e-16))).toEqual({ text: '−1', degrees: '180.0°' });
+    expect(globalPhase(amp(-1, -0))).toEqual({ text: '−1', degrees: '180.0°' });
+  });
+  it('a small real phase is not written as zero', () => {
+    expect(globalPhase(amp(Math.cos(-5e-5), Math.sin(-5e-5)))).toEqual({ text: 'e^{−i5.0e−5}', degrees: '−2.9e−3°' });
+    expect(globalPhase(amp(Math.cos(2e-4), Math.sin(2e-4)))).toEqual({ text: 'e^{i2.0e−4}', degrees: '1.1e−2°' });
+  });
 });
 
 describe('KetView global phase', () => {

@@ -218,11 +218,21 @@ export function globalPhase(amp: ArrayLike<number>): { text: string; degrees: st
   const ph = symbolicPhase(g);
   // the same tolerance as the ket's symbols: a phase the ket would write as 1 is none
   if (ph && !ph.neg && ph.unit === '') return null;
-  const deg = (g * 180) / Math.PI;
-  const degrees = `${deg < 0 ? '−' : ''}${Math.abs(deg).toFixed(1)}°`;
+  // a snapped phase uses its exact multiple of π/12 in (−π, π], so γ = π never reads −180°
+  let a = g;
+  if (ph) {
+    let k = ((Math.round(g / PHASE_STEP) % 24) + 24) % 24;
+    if (k > 12) k -= 24;
+    a = k * PHASE_STEP;
+  }
+  // tiny phases keep two significant digits instead of rounding to a signed zero
+  const num = (v: number, digits: number) =>
+    Math.abs(v) < 0.5 * 10 ** -digits ? Math.abs(v).toExponential(1).replace('-', '−') : Math.abs(v).toFixed(digits);
+  const deg = (a * 180) / Math.PI;
+  const degrees = `${deg < 0 ? '−' : ''}${num(deg, 1)}°`;
   let text: string;
   if (ph) text = ph.unit === '' ? '−1' : `${ph.neg ? '−' : ''}${ph.unit}`;
-  else text = g < 0 ? `e^{−i${dec(-g)}}` : `e^{i${dec(g)}}`;
+  else text = a < 0 ? `e^{−i${num(a, 3)}}` : `e^{i${num(a, 3)}}`;
   return { text, degrees };
 }
 
