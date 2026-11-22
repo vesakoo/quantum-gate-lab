@@ -9,7 +9,7 @@ import { StateVector } from '../../src/sim/statevector';
 import { gateMatrix } from '../../src/sim/gates';
 import App from '../../src/ui/App';
 import KetView from '../../src/ui/KetView';
-import { formatKet, qubitAmplitudes, symbolicSqrt } from '../../src/ui/ket';
+import { formatKet, globalPhase, qubitAmplitudes, symbolicSqrt } from '../../src/ui/ket';
 import { blochPolar } from '../../src/ui/polar';
 import { blochFrom } from '../../src/sim/backend';
 
@@ -222,4 +222,30 @@ describe('KetView', () => {
     render(<App />);
     expect(screen.getByLabelText('Output state in ket notation').textContent).toBe('|ψ⟩ = (|00⟩ + |11⟩)/√2');
   });
+});
+
+describe('globalPhase', () => {
+  const amp = (re: number, im: number, n = 2, at = 1) => {
+    const a = new Array(2 * n).fill(0);
+    a[2 * at] = re;
+    a[2 * at + 1] = im;
+    return a;
+  };
+  const r = Math.SQRT1_2;
+  it('T·T·T|1⟩: e^{i3π/4}, 135.0°', () => expect(globalPhase(amp(-r, r))).toEqual({ text: 'e^{i3π/4}', degrees: '135.0°' }));
+  it('γ = π is −1, 180.0°', () => expect(globalPhase(amp(-1, 0))).toEqual({ text: '−1', degrees: '180.0°' }));
+  it('γ = π/2 is i; −π/2 is −i', () => {
+    expect(globalPhase(amp(0, 1))).toEqual({ text: 'i', degrees: '90.0°' });
+    expect(globalPhase(amp(0, -1))).toEqual({ text: '−i', degrees: '−90.0°' });
+  });
+  it('negative multiple of π/12', () => expect(globalPhase(amp(r, -r))).toEqual({ text: 'e^{−iπ/4}', degrees: '−45.0°' }));
+  it('non-π/12 phase as decimals', () =>
+    expect(globalPhase(amp(Math.cos(-0.4), Math.sin(-0.4)))).toEqual({ text: 'e^{−i0.400}', degrees: '−22.9°' }));
+  it('zero and rounding noise are none', () => {
+    expect(globalPhase(amp(1, 0))).toBeNull();
+    expect(globalPhase(amp(1, 1e-12))).toBeNull();
+    expect(globalPhase(amp(1, 1e-7))).toBeNull();
+  });
+  it('uses the first non-zero amplitude', () => expect(globalPhase([0, 0, 0, r, r, 0])).toEqual({ text: 'i', degrees: '90.0°' }));
+  it('all-zero amplitudes give null', () => expect(globalPhase([0, 0, 0, 0])).toBeNull());
 });
