@@ -1236,6 +1236,22 @@ button:disabled {
   color: var(--muted);
 }
 
+.ket-why {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ket-why summary {
+  cursor: pointer;
+  width: max-content;
+}
+
+.ket-why .ket-note {
+  margin-top: 4px;
+  max-width: 70ch;
+}
+
 /* an angle that does not parse: the simulator skips the gate */
 .step-column .gate.invalid,
 .gate.invalid {
