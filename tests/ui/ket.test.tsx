@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyCircuit, type Op } from '../../src/model/circuit';
 import { toHash } from '../../src/model/serialize';
 import type { GateId } from '../../src/sim/gates';
@@ -9,7 +9,7 @@ import { StateVector } from '../../src/sim/statevector';
 import { gateMatrix } from '../../src/sim/gates';
 import App from '../../src/ui/App';
 import KetView from '../../src/ui/KetView';
-import { formatKet, qubitAmplitudes, symbolicSqrt } from '../../src/ui/ket';
+import { formatKet, globalPhase, qubitAmplitudes, symbolicSqrt } from '../../src/ui/ket';
 import { blochPolar } from '../../src/ui/polar';
 import { blochFrom } from '../../src/sim/backend';
 
@@ -194,21 +194,21 @@ describe('KetView', () => {
 
   it('renders the ket with a superscript phase', () => {
     const { container } = render(
-      <KetView amplitudes={amps([S2, 0], [0.5, 0.5])} purity={1} numQubits={1} />,
+      <KetView amplitudes={amps([S2, 0], [0.5, 0.5])} purity={1} numQubits={1} backend="statevector" />,
     );
     expect(screen.getByLabelText('Output state in ket notation').textContent).toBe('|ψ⟩ = (|0⟩ + eiπ/4|1⟩)/√2');
     expect(container.querySelector('.ket sup')?.textContent).toBe('iπ/4');
   });
 
   it('explains a mixed state', () => {
-    render(<KetView amplitudes={null} purity={0.5} numQubits={2} />);
+    render(<KetView amplitudes={null} purity={0.5} numQubits={2} backend="statevector" />);
     expect(screen.getByText(/Mixed state \(purity Tr ρ² = 0\.500\)/)).toBeTruthy();
   });
 
   it('offers all terms for long sums', () => {
     const n = 4;
     const a = Array.from({ length: 16 }, () => [0.25, 0] as [number, number]).flat();
-    render(<KetView amplitudes={a} purity={1} numQubits={n} />);
+    render(<KetView amplitudes={a} purity={1} numQubits={n} backend="statevector" />);
     const ket = screen.getByLabelText('Output state in ket notation');
     expect(ket.textContent).toContain('…');
     fireEvent.click(screen.getByLabelText('Show all 16 terms'));
@@ -221,5 +221,97 @@ describe('KetView', () => {
     history.replaceState(null, '', `/#${toHash(c)}`);
     render(<App />);
     expect(screen.getByLabelText('Output state in ket notation').textContent).toBe('|ψ⟩ = (|00⟩ + |11⟩)/√2');
+  });
+});
+
+describe('globalPhase', () => {
+  const amp = (re: number, im: number, n = 2, at = 1) => {
+    const a = new Array(2 * n).fill(0);
+    a[2 * at] = re;
+    a[2 * at + 1] = im;
+    return a;
+  };
+  const r = Math.SQRT1_2;
+  it('T·T·T|1⟩: e^{i3π/4}, 135.0°', () => expect(globalPhase(amp(-r, r))).toEqual({ text: 'e^{i3π/4}', degrees: '135.0°' }));
+  it('γ = π is −1, 180.0°', () => expect(globalPhase(amp(-1, 0))).toEqual({ text: '−1', degrees: '180.0°' }));
+  it('γ = π/2 is i; −π/2 is −i', () => {
+    expect(globalPhase(amp(0, 1))).toEqual({ text: 'i', degrees: '90.0°' });
+    expect(globalPhase(amp(0, -1))).toEqual({ text: '−i', degrees: '−90.0°' });
+  });
+  it('negative multiple of π/12', () => expect(globalPhase(amp(r, -r))).toEqual({ text: 'e^{−iπ/4}', degrees: '−45.0°' }));
+  it('non-π/12 phase as decimals', () =>
+    expect(globalPhase(amp(Math.cos(-0.4), Math.sin(-0.4)))).toEqual({ text: 'e^{−i0.400}', degrees: '−22.9°' }));
+  it('zero and rounding noise are none', () => {
+    expect(globalPhase(amp(1, 0))).toBeNull();
+    expect(globalPhase(amp(1, 1e-12))).toBeNull();
+    expect(globalPhase(amp(1, 1e-7))).toBeNull();
+  });
+  it('uses the first non-zero amplitude', () => expect(globalPhase([0, 0, 0, r, r, 0])).toEqual({ text: 'i', degrees: '90.0°' }));
+  it('all-zero amplitudes give null', () => expect(globalPhase([0, 0, 0, 0])).toBeNull());
+  it('γ = π reads 180.0° even when rounding noise puts atan2 at −π', () => {
+    expect(globalPhase(amp(-1, -1e-16))).toEqual({ text: '−1', degrees: '180.0°' });
+    expect(globalPhase(amp(-1, -0))).toEqual({ text: '−1', degrees: '180.0°' });
+  });
+  it('a small real phase is not written as zero', () => {
+    expect(globalPhase(amp(Math.cos(-5e-5), Math.sin(-5e-5)))).toEqual({ text: 'e^{−i5.0e−5}', degrees: '−2.9e−3°' });
+    expect(globalPhase(amp(Math.cos(2e-4), Math.sin(2e-4)))).toEqual({ text: 'e^{i2.0e−4}', degrees: '1.1e−2°' });
+  });
+});
+
+describe('KetView global phase', () => {
+  beforeEach(() => history.replaceState(null, '', '/'));
+  afterEach(cleanup);
+
+  const show = (n: number, steps: Op[][], initial?: (0 | 1)[]) => {
+    const c = emptyCircuit(n, steps.length);
+    if (initial) c.initial = initial;
+    steps.forEach((ops, s) => (c.steps[s].ops = ops));
+    history.replaceState(null, '', `/#${toHash(c)}`);
+    return render(<App />);
+  };
+  const note = (container: HTMLElement) => container.querySelector('.ket-view .ket-note')?.textContent;
+
+  it('T·T·T|1⟩ shows e^{i3π/4} (135.0°) and keeps the formula |1⟩', () => {
+    const { container } = show(1, [[op('T', [0])], [op('T', [0])], [op('T', [0])]], [1]);
+    expect(screen.getByLabelText('Output state in ket notation').textContent).toBe('|ψ⟩ = |1⟩');
+    expect(note(container)).toBe('Global phase ei3π/4 (135.0°) factored out · q[0] is the leftmost bit');
+    expect(container.querySelector('.ket-view .ket-note sup')?.textContent).toBe('i3π/4');
+  });
+
+  it('no phase reads none', () => {
+    const { container } = show(1, [[op('H', [0])]]);
+    expect(note(container)).toBe('Global phase: none · q[0] is the leftmost bit');
+  });
+
+  it('after measure/reset the phase is unknown, never a number', () => {
+    const { container } = show(1, [[op('X', [0])], [op('MEASURE', [0])]]);
+    expect(screen.getByLabelText('Output state in ket notation').textContent).toBe('|ψ⟩ = |1⟩');
+    expect(note(container)).toBe('Global phase unknown after measure/reset · q[0] is the leftmost bit');
+  });
+
+  it('explains why it cannot be measured in a native disclosure', () => {
+    const { container } = show(1, [[op('T', [0])]], [1]);
+    const summary = screen.getByText("Why can't it be measured?");
+    expect(summary.tagName).toBe('SUMMARY');
+    const details = summary.closest('details')!;
+    expect(details.textContent).toContain('changes no probability');
+    expect(details.textContent).toContain('phase kickback');
+    expect([...details.querySelectorAll('sup')].map((s) => s.textContent)).toContain('−iπ/8');
+    expect(container.querySelectorAll('.ket-view details')).toHaveLength(1);
+  });
+
+  it('Copy still copies the formula without the phase', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    const { container } = show(1, [[op('T', [0])], [op('T', [0])], [op('T', [0])]], [1]);
+    fireEvent.click(container.querySelector('.ket-view .ket-actions button')!);
+    await Promise.resolve();
+    expect(writeText).toHaveBeenCalledWith('|ψ⟩ = |1⟩');
+  });
+
+  it('a mixed state shows neither the note nor the explanation', () => {
+    const { container } = show(1, [[op('H', [0])], [op('MEASURE', [0])]]);
+    expect(container.querySelector('.ket-view .ket-note')).toBeNull();
+    expect(container.querySelector('.ket-view details')).toBeNull();
   });
 });

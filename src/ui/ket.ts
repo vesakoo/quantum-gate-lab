@@ -200,6 +200,42 @@ export function formatKet(amp: ArrayLike<number>, n: number, { maxTerms = 8 }: K
   return { text: `(${sum})/${den}`, terms: k };
 }
 
+/**
+ * The global phase γ that `formatKet` drops (the argument of the first non-zero amplitude, in (−π, π]),
+ * written in the ket's style (`e^{i3π/4}`, `−1`, `i`, `−i`, else `e^{i0.400}`) plus degrees.
+ * Null when γ is 0 or the state is zero.
+ */
+export function globalPhase(amp: ArrayLike<number>): { text: string; degrees: string } | null {
+  let f = -1;
+  for (let i = 0; i < amp.length / 2; i++) {
+    if (amp[2 * i] ** 2 + amp[2 * i + 1] ** 2 > ZERO2) {
+      f = i;
+      break;
+    }
+  }
+  if (f < 0) return null;
+  const g = Math.atan2(amp[2 * f + 1], amp[2 * f]);
+  const ph = symbolicPhase(g);
+  // the same tolerance as the ket's symbols: a phase the ket would write as 1 is none
+  if (ph && !ph.neg && ph.unit === '') return null;
+  // a snapped phase uses its exact multiple of π/12 in (−π, π], so γ = π never reads −180°
+  let a = g;
+  if (ph) {
+    let k = ((Math.round(g / PHASE_STEP) % 24) + 24) % 24;
+    if (k > 12) k -= 24;
+    a = k * PHASE_STEP;
+  }
+  // tiny phases keep two significant digits instead of rounding to a signed zero
+  const num = (v: number, digits: number) =>
+    Math.abs(v) < 0.5 * 10 ** -digits ? Math.abs(v).toExponential(1).replace('-', '−') : Math.abs(v).toFixed(digits);
+  const deg = (a * 180) / Math.PI;
+  const degrees = `${deg < 0 ? '−' : ''}${num(deg, 1)}°`;
+  let text: string;
+  if (ph) text = ph.unit === '' ? '−1' : `${ph.neg ? '−' : ''}${ph.unit}`;
+  else text = a < 0 ? `e^{−i${num(a, 3)}}` : `e^{i${num(a, 3)}}`;
+  return { text, degrees };
+}
+
 /** One complex number in the same symbolic style as the ket (`1/√2`, `−i`, `e^{iπ/4}`), `0` when negligible. */
 export function formatComplex(re: number, im: number): string {
   if (re * re + im * im < ZERO2) return '0';

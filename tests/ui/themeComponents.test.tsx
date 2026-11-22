@@ -64,7 +64,7 @@ describe('non-colour state cues', () => {
   it('stale panels keep full content and show Updating', () => {
     const one = [[{ x: 0, y: 0, z: 1, r: 1, probs: { zero: 1, one: 0, plus: 0.5, minus: 0.5, plusI: 0.5, minusI: 0.5 } }]];
     const views = [
-      <KetView key="k" amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} stale />,
+      <KetView key="k" amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} backend="statevector" stale />,
       <ProbabilityChart key="p" probabilities={[1, 0]} numQubits={1} stale />,
       <BlochStrip key="b" bloch={one as never} numQubits={1} numSteps={0} inW={40} outW={40} selected={null} onSelect={() => {}} stale />,
     ];
@@ -76,7 +76,7 @@ describe('non-colour state cues', () => {
       expect(container.querySelector('[aria-busy="true"]')).not.toBeNull();
       unmount();
     }
-    const { container } = render(<KetView amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} />);
+    const { container } = render(<KetView amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} backend="statevector" />);
     expect(container.querySelector('.updating-badge')).toBeNull();
   });
 
@@ -137,7 +137,7 @@ describe('audit findings (dark-theme plan, Task 5 iteration 1)', () => {
   });
 
   it('formula paragraphs are named with a role that allows a name', () => {
-    render(<KetView amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} />);
+    render(<KetView amplitudes={[1, 0, 0, 0]} purity={1} numQubits={1} backend="statevector" />);
     expect(screen.getByRole('math', { name: 'Output state in ket notation' })).toBeTruthy();
   });
 });

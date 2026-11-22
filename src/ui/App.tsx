@@ -308,6 +308,7 @@ export default function App() {
             amplitudes={sim.amplitudes}
             purity={sim.purity}
             numQubits={sim.numQubits}
+            backend={sim.backend}
             stale={!simFresh || computing}
           />
         ) : null}
