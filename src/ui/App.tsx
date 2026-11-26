@@ -19,6 +19,7 @@ import KetView from './KetView';
 import ThemeToggle from './ThemeToggle';
 import { GateCardProvider } from './gateCardContext';
 import OperatorView from './OperatorView';
+import MatrixProductView from './MatrixProductView';
 import Palette from './Palette';
 import ProbabilityChart from './ProbabilityChart';
 import { useCircuit } from './useCircuit';
@@ -316,6 +317,7 @@ export default function App() {
           <ProbabilityChart probabilities={sim.probabilities} numQubits={sim.numQubits} stale={!simFresh || computing} />
         ) : null}
         <OperatorView circuit={circuit} />
+        <MatrixProductView circuit={circuit} />
       </div>
       {blochSel && panelValid && panelBloch ? (
         <BlochPanel qubit={blochSel.qubit} step={blochSel.s} bloch={panelBloch} onClose={closeBloch} />

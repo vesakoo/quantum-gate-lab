@@ -1179,7 +1179,8 @@ button:disabled {
 }
 
 .ket-view,
-.operator-view {
+.operator-view,
+.matrix-view {
   margin-top: 16px;
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -1187,14 +1188,16 @@ button:disabled {
 }
 
 .ket-view header,
-.operator-view header {
+.operator-view header,
+.matrix-view header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .ket-view h2,
-.operator-view h2 {
+.operator-view h2,
+.matrix-view h2 {
   margin: 0;
   font-size: 15px;
 }
@@ -1351,6 +1354,31 @@ button:disabled {
 
 .matrix sup {
   font-size: 0.7em;
+}
+
+/* circuit as matrices */
+.matrix-product {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 6px 0;
+}
+
+.matrix-term {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.matrix-op {
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.matrix-caption {
+  font-size: 11px;
+  color: var(--muted);
 }
 
 /* gate info card */
