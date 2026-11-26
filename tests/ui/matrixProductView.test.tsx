@@ -80,6 +80,35 @@ describe('MatrixProductView', () => {
     expect(ops.compareDocumentPosition(mats) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it('a term wider than the panel scrolls inside the line', () => {
+    const m = css.match(/(^|\n)\.matrix-product\s*\{([^}]*)\}/);
+    expect(m?.[2]).toContain('overflow-x: auto');
+  });
+
+  it('scrollable lines can be reached by keyboard', () => {
+    render(<MatrixProductView circuit={bell()} />);
+    expect(line1().tabIndex).toBe(0);
+    expect(line2().tabIndex).toBe(0);
+  });
+
+  it('is memoised so unrelated App renders skip it', () => {
+    expect((MatrixProductView as unknown as { $$typeof: symbol }).$$typeof).toBe(Symbol.for('react.memo'));
+  });
+
+  it('hides step matrices above the cell budget but keeps the product', () => {
+    const c = circ(4, Array.from({ length: 17 }, (_, i): [Op[]] => [[op('H', [i % 4])]]));
+    render(<MatrixProductView circuit={c} />);
+    expect(tables(line1())).toHaveLength(1);
+    expect(line1().textContent).toContain('U = M₁₇ · … · M₁ =');
+    expect(screen.getByText('Step matrices are hidden above 16 steps at 4 qubits; U is still the product of all 17 steps.')).toBeTruthy();
+  });
+
+  it('16 steps at 4 qubits still shows every step matrix', () => {
+    const c = circ(4, Array.from({ length: 16 }, (_, i): [Op[]] => [[op('H', [i % 4])]]));
+    render(<MatrixProductView circuit={c} />);
+    expect(tables(line1())).toHaveLength(17);
+  });
+
   it('long lines wrap', () => {
     const m = css.match(/(^|\n)\.matrix-product\s*\{([^}]*)\}/);
     expect(m?.[2]).toContain('flex-wrap: wrap');

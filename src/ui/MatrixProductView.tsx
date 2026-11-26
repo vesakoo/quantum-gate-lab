@@ -1,9 +1,13 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, memo, useMemo } from 'react';
 import type { Circuit } from '../model/circuit';
 import { circuitMatrices, MAX_MATRIX_QUBITS } from '../model/matrices';
 import type { MatrixSpec } from './gateDocs';
 import { matrixSpec, vectorSpec } from './matrixText';
 import MatrixView from './MatrixView';
+import { subscript } from './operatorText';
+
+/** Step matrices are written out while their cells total at most this (16 steps at 4 qubits). */
+const CELL_BUDGET = 4096;
 
 const Op = ({ children }: { children: string }) => <span className="matrix-op">{children}</span>;
 
@@ -17,13 +21,17 @@ function Term({ m, caption }: { m: MatrixSpec; caption?: string }) {
 }
 
 /** The circuit as written-out step matrices, their product, and the product applied to the input (≤ 4 qubits). */
-export default function MatrixProductView({ circuit }: { circuit: Circuit }) {
+function MatrixProductView({ circuit }: { circuit: Circuit }) {
   const data = useMemo(() => {
     const cm = circuitMatrices(circuit);
     if (!cm) return null;
+    const maxSteps = CELL_BUDGET / cm.product.dim ** 2;
+    const hidden = cm.factors.length > maxSteps;
     return {
       cm,
-      factors: cm.factors.map((f) => ({ step: f.step, spec: matrixSpec(f.m) })).reverse(),
+      maxSteps,
+      hidden,
+      factors: hidden ? [] : cm.factors.map((f) => ({ step: f.step, spec: matrixSpec(f.m) })).reverse(),
       product: matrixSpec(cm.product),
       input: vectorSpec(cm.input),
       output: vectorSpec(cm.output),
@@ -37,8 +45,13 @@ export default function MatrixProductView({ circuit }: { circuit: Circuit }) {
       </header>
       {data ? (
         <>
-          <div className="matrix-product" role="group" aria-label="Circuit matrix product">
-            {data.factors.length === 0 ? (
+          <div className="matrix-product" role="group" tabIndex={0} aria-label="Circuit matrix product">
+            {data.hidden ? (
+              <>
+                <Op>{`U = M${subscript(data.cm.factors.length)} · … · M₁ =`}</Op>
+                <Term m={data.product} />
+              </>
+            ) : data.factors.length === 0 ? (
               <>
                 <Op>U = I =</Op>
                 <Term m={data.product} />
@@ -61,7 +74,7 @@ export default function MatrixProductView({ circuit }: { circuit: Circuit }) {
               </>
             )}
           </div>
-          <div className="matrix-product" role="group" aria-label="Circuit matrix applied to the input">
+          <div className="matrix-product" role="group" tabIndex={0} aria-label="Circuit matrix applied to the input">
             <Op>{`U·|${data.cm.initial.join('')}⟩ =`}</Op>
             <Term m={data.product} />
             <Op>·</Op>
@@ -69,6 +82,12 @@ export default function MatrixProductView({ circuit }: { circuit: Circuit }) {
             <Op>=</Op>
             <Term m={data.output} />
           </div>
+          {data.hidden ? (
+            <p className="ket-note">
+              Step matrices are hidden above {data.maxSteps} steps at {data.cm.numQubits} qubits; U is still the product of
+              all {data.cm.factors.length} steps.
+            </p>
+          ) : null}
           {data.cm.stoppedAt ? (
             <p className="ket-note">
               {data.cm.stoppedAt.kind === 'measure' ? 'Measurement' : 'Reset'} at step {data.cm.stoppedAt.step + 1} — the
@@ -83,3 +102,5 @@ export default function MatrixProductView({ circuit }: { circuit: Circuit }) {
     </section>
   );
 }
+
+export default memo(MatrixProductView);

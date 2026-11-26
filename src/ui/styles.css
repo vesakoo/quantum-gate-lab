@@ -1360,6 +1360,7 @@ button:disabled {
 .matrix-product {
   display: flex;
   flex-wrap: wrap;
+  overflow-x: auto;
   align-items: center;
   gap: 4px 8px;
   margin: 6px 0;
