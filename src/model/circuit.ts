@@ -7,7 +7,7 @@ export type Op = { id: string; gate: GateId; wires: number[]; params: string[] }
 export type Step = { ops: Op[]; controls: Control[] };
 export type Circuit = { numQubits: number; initial: (0 | 1)[]; steps: Step[] };
 
-export function emptyCircuit(numQubits = 4, numSteps = 12): Circuit {
+export function emptyCircuit(numQubits = 3, numSteps = 12): Circuit {
   return {
     numQubits,
     initial: Array.from({ length: numQubits }, () => 0 as const),

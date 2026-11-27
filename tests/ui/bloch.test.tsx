@@ -38,12 +38,12 @@ describe('Bloch strip', () => {
     render(<App />);
     const strip = screen.getByRole('region', { name: 'Bloch spheres' });
     const s = within(strip);
-    for (let q = 0; q < 4; q++) {
+    for (let q = 0; q < 3; q++) {
       expect(s.getByRole('button', { name: `q[${q}] input` })).toBeInTheDocument();
       for (let k = 1; k <= 12; k++) expect(s.getByRole('button', { name: `q[${q}] after step ${k}` })).toBeInTheDocument();
       expect(s.getAllByRole('button', { name: new RegExp(`^q\\[${q}\\] `) })).toHaveLength(13);
     }
-    expect(s.queryByRole('button', { name: 'q[4] input' })).not.toBeInTheDocument();
+    expect(s.queryByRole('button', { name: 'q[3] input' })).not.toBeInTheDocument();
   });
 
   it('marks an entangled qubit as mixed', () => {

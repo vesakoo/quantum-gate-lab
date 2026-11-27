@@ -82,22 +82,22 @@ describe('App with a lagging worker result', () => {
     const w = FakeWorker.last!;
     act(() => w.reply(w.posted[0].id));
     expect(screen.getByLabelText(/^q\[0\] output/)).toHaveTextContent('0');
-    expect(chartLabels(container)).toContain('0000');
+    expect(chartLabels(container)).toContain('000');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Remove q[3]' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove q[2]' }));
     expect(w.posted).toHaveLength(2);
-    // old 4-qubit result: chart keeps 4-bit labels, strip keeps 4 rows, both dimmed; Out is blank
+    // old 3-qubit result: chart keeps 3-bit labels, strip keeps 3 rows, both dimmed; Out is blank
     const chart = container.querySelector('.prob-chart')!;
     expect(chart.classList.contains('stale')).toBe(true);
-    expect(chartLabels(container)).toContain('0000');
+    expect(chartLabels(container)).toContain('000');
     expect(container.querySelector('.bloch-strip')?.classList.contains('stale')).toBe(true);
     expect(screen.getByLabelText(/^q\[0\] output/)).toHaveTextContent('');
     expect(screen.getByText('Computing…')).toBeInTheDocument();
 
     act(() => w.reply(w.posted[1].id));
     expect(container.querySelector('.prob-chart')?.classList.contains('stale')).toBe(false);
-    expect(chartLabels(container)).toContain('000');
-    expect(chartLabels(container)).not.toContain('0000');
+    expect(chartLabels(container)).toContain('00');
+    expect(chartLabels(container)).not.toContain('000');
     expect(screen.getByLabelText(/^q\[0\] output/)).toHaveTextContent('0');
     expect(screen.queryByText('Computing…')).not.toBeInTheDocument();
   });
