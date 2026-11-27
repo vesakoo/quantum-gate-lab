@@ -29,8 +29,8 @@ describe('Palette', () => {
 describe('CircuitGrid', () => {
   it('renders qubit rows, step headers and corner headers', () => {
     render(<App />);
-    for (let q = 0; q < 4; q++) expect(screen.getByText(`q[${q}]`)).toBeInTheDocument();
-    expect(screen.queryByText('q[4]')).not.toBeInTheDocument();
+    for (let q = 0; q < 3; q++) expect(screen.getByText(`q[${q}]`)).toBeInTheDocument();
+    expect(screen.queryByText('q[3]')).not.toBeInTheDocument();
     const headers = Array.from(document.querySelectorAll('.step-head')).map((h) => h.textContent);
     expect(headers).toEqual(Array.from({ length: 12 }, (_, i) => String(i + 1)));
     expect(screen.getAllByText('Step')).toHaveLength(2);
@@ -49,13 +49,19 @@ describe('CircuitGrid', () => {
     expect(screen.getByLabelText(/^q\[1\] output/)).toHaveTextContent('0');
   });
 
+  it('starts with 3 qubits', () => {
+    render(<App />);
+    expect(screen.getByText('q[2]')).toBeInTheDocument();
+    expect(screen.queryByText('q[3]')).not.toBeInTheDocument();
+  });
+
   it('adds and removes qubits', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Add qubit' }));
-    expect(screen.getByText('q[4]')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove q[4]' }));
-    expect(screen.queryByText('q[4]')).not.toBeInTheDocument();
     expect(screen.getByText('q[3]')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Remove q[3]' }));
+    expect(screen.queryByText('q[3]')).not.toBeInTheDocument();
+    expect(screen.getByText('q[2]')).toBeInTheDocument();
   });
 
   it('loads from the URL hash, edits angles on double-click, deletes the selected op', () => {
@@ -80,7 +86,7 @@ describe('CircuitGrid', () => {
 
 describe('B gate drawing', () => {
   it('adjacent B is one block; non-adjacent B is two end boxes and a connector', () => {
-    const adj = placeGate(emptyCircuit(), 'B', 0, 0);
+    const adj = placeGate(emptyCircuit(4), 'B', 0, 0);
     history.replaceState(null, '', `/#${toHash(adj)}`);
     const first = render(<App />);
     expect(first.container.querySelectorAll('.b-block')).toHaveLength(1);
