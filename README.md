@@ -55,6 +55,13 @@ npm run typecheck
   - **Long circuits:** step matrices are hidden above 4096 cells in total (16 steps at 4 qubits); U and the output are still shown.
   - **Measure/reset:** like the operator panel, the calculation ends before the first measure/reset.
   - **Wide lines:** they wrap, and a single matrix wider than the panel scrolls sideways.
+- Export… (toolbar) writes the circuit as code for real quantum hardware:
+  - **Qiskit tab:** a Python script for any circuit, also for VTT/IQM machines through `qiskit-iqm`. Controls on any gate use `.control(k, ctrl_state=…)`.
+  - **OpenQASM 2.0 tab:** for circuits that fit the standard gates (Qiskit's `qelib1.inc`, which IBM Quantum Composer also reads). iSWAP and √SWAP get exact gate definitions, and hollow controls become X gates around the control. If a step has no OpenQASM 2.0 form, e.g. H with two controls, the tab names that step and points to the Qiskit tab.
+  - **Measurement:** when the circuit has no measurement, one of every qubit is added at the end, because hardware returns counts only.
+  - **Wire numbering** is unchanged. A comment explains that Qiskit prints count keys with q[0] on the right.
+  - **Invalid angles:** a gate with an unparseable angle blocks the export until it is fixed.
+  - Copy and Download (`circuit.py`, `circuit.qasm`).
 - Hovering a gate or control (in the palette or on the circuit) for a moment, or focusing it with the keyboard, opens a gate card: name, a short description, what it does to basis states, and its matrix. On the circuit the card adds a Here section: qubit and step, the angle with the evaluated matrix, and for controlled gates the block matrix with the controls first in the basis order, e.g. CCX = [[I₆, 0], [0, X]], plus the projector form. Click a palette item to pin its card; Esc closes the card (a second Esc clears the selection).
 - Controls (filled = on 1, hollow = on 0) in a step apply to every unitary gate in that step.
 - The B gate is a Bell-pair gate (H on one wire, then CNOT): the dot marks its H/control end; the other end is the CNOT target.

@@ -81,9 +81,7 @@ export function toQiskit(l: Lowered, shareUrl: string): string {
 }
 
 function opLines(o: ExportOp, classes: Set<string>, helpers: Set<'SQSWAP' | 'B'>): string[] {
-  if (o.kind === 'measure') return [`qc.measure(${o.wire}, ${o.wire})`];
-  if (o.kind === 'reset') return [`qc.reset(${o.wire})`];
-  if (o.kind === 'barrier') return [`qc.barrier(${o.wire})`];
+  if (o.kind !== 'gate') return [o.kind === 'measure' ? `qc.measure(${o.wire}, ${o.wire})` : `qc.${o.kind}(${o.wire})`];
   const { gate, wires, params, controls } = o;
   const args = (ws: number[]) => [...params, ...ws].join(', ');
 

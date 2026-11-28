@@ -52,9 +52,7 @@ export function toQasm2(l: Lowered, shareUrl: string): { ok: true; code: string 
 }
 
 function opLines(o: ExportOp, used: Set<'ISWAP' | 'SQSWAP'>): string[] | string {
-  if (o.kind === 'measure') return [`measure q[${o.wire}] -> c[${o.wire}];`];
-  if (o.kind === 'reset') return [`reset q[${o.wire}];`];
-  if (o.kind === 'barrier') return [`barrier q[${o.wire}];`];
+  if (o.kind !== 'gate') return [o.kind === 'measure' ? `measure q[${o.wire}] -> c[${o.wire}];` : `${o.kind} q[${o.wire}];`];
   const { gate, wires, params, controls } = o;
   if (gate === 'ISWAP' || gate === 'SQSWAP') used.add(gate);
 

@@ -10,6 +10,7 @@ import {
   removeOp, removeQubit, setParams, toggleInitial,
 } from '../model/edit';
 import AngleDialog from './AngleDialog';
+import ExportDialog from './ExportDialog';
 import BlochPanel from './BlochPanel';
 import BlochStrip, { type BlochSel } from './BlochStrip';
 import CircuitGrid, { IN_W, OUT_W, type Selection } from './CircuitGrid';
@@ -106,6 +107,8 @@ export default function App() {
     setIoError(loadError ? loadError.message : null);
   }, [loadError]);
   const [copied, setCopied] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const exportRef = useRef<HTMLButtonElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const onSave = () => {
     const url = URL.createObjectURL(new Blob([toJSON(circuit)], { type: 'application/json' }));
@@ -134,8 +137,9 @@ export default function App() {
       setSelection(null);
     } else setIoError(`Could not load ${f.name}: ${r.error}`);
   };
+  const shareUrl = (c: Circuit) => `${location.origin}${location.pathname}${location.search}#${toHash(c)}`;
   const onCopyLink = async () => {
-    const url = `${location.origin}${location.pathname}${location.search}#${toHash(circuit)}`;
+    const url = shareUrl(circuit);
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -301,6 +305,7 @@ export default function App() {
             onChange={onLoadFile}
           />
           <button type="button" onClick={onCopyLink}>{copied ? 'Copied!' : 'Copy link'}</button>
+          <button type="button" ref={exportRef} onClick={() => setExporting(true)}>Export…</button>
           <button type="button" onClick={onClear}>Clear</button>
           {ioError ? <span className="error" role="alert">{ioError}</span> : null}
         </div>
@@ -321,6 +326,16 @@ export default function App() {
       </div>
       {blochSel && panelValid && panelBloch ? (
         <BlochPanel qubit={blochSel.qubit} step={blochSel.s} bloch={panelBloch} onClose={closeBloch} />
+      ) : null}
+      {exporting ? (
+        <ExportDialog
+          circuit={circuit}
+          shareUrl={shareUrl(circuit)}
+          onClose={() => {
+            setExporting(false);
+            exportRef.current?.focus();
+          }}
+        />
       ) : null}
       {editing && angleEdit ? (
         <AngleDialog
