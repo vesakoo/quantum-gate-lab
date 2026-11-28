@@ -58,7 +58,7 @@ npm run typecheck
 - Export… (toolbar) writes the circuit as code for real quantum hardware:
   - **Qiskit tab:** a Python script for any circuit, also for VTT/IQM machines through `qiskit-iqm`. Controls on any gate use `.control(k, ctrl_state=…)`.
   - **OpenQASM 2.0 tab:** for circuits that fit the standard gates (Qiskit's `qelib1.inc`, which IBM Quantum Composer also reads). iSWAP and √SWAP get exact gate definitions, and hollow controls become X gates around the control. If a step has no OpenQASM 2.0 form, e.g. H with two controls, the tab names that step and points to the Qiskit tab.
-  - **Measurement:** when the circuit has no measurement, one of every qubit is added at the end, because hardware returns counts only.
+  - **Measurement:** every qubit whose last operation is not a measurement is measured at the end, because hardware returns counts only. The counts then match the lab's probabilities, even when the circuit measures some qubits early.
   - **Wire numbering** is unchanged. A comment explains that Qiskit prints count keys with q[0] on the right.
   - **Invalid angles:** a gate with an unparseable angle blocks the export until it is fixed.
   - Copy and Download (`circuit.py`, `circuit.qasm`).

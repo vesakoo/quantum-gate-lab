@@ -54,7 +54,8 @@ code; it does not run anything itself.
 - **Initial |1⟩ inputs** become an `x` at the start.
 - **MEASURE** becomes `measure q[i] -> c[i]`, **RESET** becomes `reset q[i]`, and **BARRIER** becomes
   `barrier q[i]`.
-- **Final measurement (my call).** If the circuit has no MEASURE at all, a measurement of every qubit into
+- **Final measurement (my call, revised after review).** Every qubit whose last op is not a MEASURE is measured at the end, so counts always match the lab. The original rule below left partial or early measurements unmatched.
+  Original rule: if the circuit has no MEASURE at all, a measurement of every qubit into
   `c` is added at the end with a comment, because hardware only returns counts. If the circuit has its own
   measurements, nothing is added. The lab's dephasing measure and a real collapsing measure give the same
   outcome statistics, so mid-circuit measures stay faithful.
