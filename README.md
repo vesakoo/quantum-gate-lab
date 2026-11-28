@@ -2,7 +2,7 @@
 
 **Try it live: https://vesakoo.github.io/quantum-gate-lab/**
 
-A browser-based quantum circuit simulator. Drag gates onto up to 10 qubit wires, see per-step Bloch spheres and the output probability distribution update live, and read the result as a ket, as a Dirac operator product and as a matrix multiplication. Circuits can be saved/loaded as JSON or shared as a link (the circuit is encoded in the URL hash).
+A browser-based quantum circuit simulator. Drag gates onto up to 10 qubit wires, see per-step Bloch spheres and the output probability distribution update live, and read the result as a ket, as a Dirac operator product and as a matrix multiplication. Circuits can be saved/loaded as JSON, shared as a link (the circuit is encoded in the URL hash), or exported as Qiskit or OpenQASM 2.0 code to run on real quantum hardware.
 
 ![Quantum Gate Lab in the dark theme: SX† and a CNOT entangle two qubits; the Bloch panel, output state, probabilities, operator product and step matrices are shown](docs/images/screenshot.png)
 
@@ -23,6 +23,10 @@ docker compose --profile dev up dev     # http://localhost:5173
 # or
 npm install && npm run dev
 ```
+
+## Deployment
+
+Every push to `main` builds the app and publishes it to GitHub Pages (`.github/workflows/pages.yml`, about a minute). The build output goes straight to Pages; the repo has no `gh-pages` branch. The Pages build uses `--base=/quantum-gate-lab/`, while a plain `npm run build` (Docker) keeps `/`.
 
 ## Tests
 
