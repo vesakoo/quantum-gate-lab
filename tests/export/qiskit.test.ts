@@ -62,10 +62,19 @@ describe('toQiskit', () => {
     expect(after.trim()).toBe('qc.measure(range(3), range(3))  # added: hardware returns counts only after measurement');
   });
 
-  it('own measure, no extra', () => {
-    const s = q(1, [[[op('MEASURE', [0])]], [[op('H', [0])]]]);
-    expect(s).toContain('qc.measure(0, 0)\n');
-    expect(s).not.toContain('range(');
+  it('own final measure, no extra', () => {
+    const s = q(1, [[[op('H', [0])]], [[op('MEASURE', [0])]]]);
+    expect(s.match(/qc\.measure/g)).toHaveLength(1);
+  });
+
+  it('partial measure adds the missing qubits at the end', () => {
+    const s = q(2, [[[op('H', [0])]], [[op('X', [1])], [on1(0)]], [[op('MEASURE', [0])]]]);
+    expect(s).toContain('qc.measure(0, 0)\nqc.measure(1, 1)  # added: hardware returns counts only after measurement');
+  });
+
+  it('gate after a measure is measured again', () => {
+    const s = q(1, [[[op('MEASURE', [0])]], [[op('X', [0])]]]);
+    expect(s).toContain('qc.x(0)\nqc.measure(range(1), range(1))  # added');
   });
 
   it('bit-order example is informative for symmetric inputs', () => {

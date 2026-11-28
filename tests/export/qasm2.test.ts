@@ -72,7 +72,7 @@ describe('toQasm2', () => {
 
   it('initial ones and measure/reset/barrier', () => {
     const s = code(2, [[[op('MEASURE', [0]), op('RESET', [1])]], [[op('BARRIER', [0])]]], [0, 1]);
-    expect(gateLines(s)).toEqual(['x q[1];', 'measure q[0] -> c[0];', 'reset q[1];', 'barrier q[0];']);
+    expect(gateLines(s)).toEqual(['x q[1];', 'measure q[0] -> c[0];', 'reset q[1];', 'barrier q[0];', 'measure q[1] -> c[1];']);
   });
 
   it('empty circuit', () => {

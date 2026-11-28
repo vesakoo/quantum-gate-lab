@@ -44,10 +44,14 @@ describe('lower', () => {
     expect(ok(circ(1, [[[op('I', [0])]]])).ops).toEqual([]);
   });
 
-  it('finalMeasure', () => {
-    expect(ok(circ(2, [[[op('H', [0])]]])).finalMeasure).toBe(true);
-    expect(ok(circ(2, [])).finalMeasure).toBe(true);
-    expect(ok(circ(1, [[[op('MEASURE', [0])]], [[op('H', [0])]]])).finalMeasure).toBe(false);
+  it('finalMeasure lists every qubit whose last op is not a measure', () => {
+    expect(ok(circ(2, [[[op('H', [0])]]])).finalMeasure).toEqual([0, 1]);
+    expect(ok(circ(2, [])).finalMeasure).toEqual([0, 1]);
+    // measure then a gate on the same qubit: it must be measured again at the end
+    expect(ok(circ(1, [[[op('MEASURE', [0])]], [[op('X', [0])]]])).finalMeasure).toEqual([0]);
+    // Bell pair with only q0 measured: q1 still needs its measurement
+    expect(ok(circ(2, [[[op('H', [0])]], [[op('X', [1])], [{ wire: 0, kind: 'on1' }]], [[op('MEASURE', [0])]]])).finalMeasure).toEqual([1]);
+    expect(ok(circ(2, [[[op('MEASURE', [0]), op('MEASURE', [1])]]])).finalMeasure).toEqual([]);
   });
 
   it('measure/reset/barrier', () => {
@@ -77,5 +81,9 @@ describe('angleText', () => {
     expect(angleText(' pi ')).toBe('pi');
     expect(angleText('π')).toBe('pi');
     expect(angleText('0.5')).toBe('0.5');
+    // leading zeros are a SyntaxError in Python 3: fall back to the value
+    expect(angleText('01')).toBe('1');
+    expect(angleText('pi/007')).toBe(String(Math.PI / 7));
+    expect(angleText('0.07*pi')).toBe('0.07*pi');
   });
 });

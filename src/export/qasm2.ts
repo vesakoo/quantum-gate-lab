@@ -37,7 +37,9 @@ export function toQasm2(l: Lowered, shareUrl: string): { ok: true; code: string 
     if (typeof r === 'string') return { ok: false, message: r };
     body.push(...r);
   }
-  if (l.finalMeasure) body.push('measure q -> c; // added: hardware returns counts only after measurement');
+  const note = ' // added: hardware returns counts only after measurement';
+  if (l.numQubits > 0 && l.finalMeasure.length === l.numQubits) body.push(`measure q -> c;${note}`);
+  else for (const q of l.finalMeasure) body.push(`measure q[${q}] -> c[${q}];${note}`);
   const out = [
     '// Exported from Quantum Gate Lab',
     `// ${shareUrl}`,

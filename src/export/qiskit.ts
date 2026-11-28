@@ -59,7 +59,9 @@ export function toQiskit(l: Lowered, shareUrl: string): string {
 
   for (const q of l.initialOnes) body.push(`qc.x(${q})`);
   for (const o of l.ops) body.push(...opLines(o, classes, helpers));
-  if (l.finalMeasure) body.push(`qc.measure(range(${n}), range(${n}))  # added: hardware returns counts only after measurement`);
+  const note = '  # added: hardware returns counts only after measurement';
+  if (n > 0 && l.finalMeasure.length === n) body.push(`qc.measure(range(${n}), range(${n}))${note}`);
+  else for (const q of l.finalMeasure) body.push(`qc.measure(${q}, ${q})${note}`);
 
   const out: string[] = [
     '# Exported from Quantum Gate Lab',
