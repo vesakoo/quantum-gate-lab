@@ -38,6 +38,7 @@ const COVERED = [
   [/\.more-toggle(?![\w-])/, 'button text'],
   [/^#\\:r[0-9a-z]+\\:-title$/, 'dialog title'],
   [/\.gate-card-(desc|proj|here)(?![\w-])/, 'card text'],
+  [/^pre$|\.export-code(?![\w-])/, 'code text'],
 ];
 
 const failures = [];
@@ -463,6 +464,22 @@ try {
 
     // keyboard focus walk
     await focusWalk(page, theme);
+
+    // export dialog, on an empty circuit so both tabs show code (the fixture's invalid angle would block it)
+    await page.goto(url);
+    await page.click('button:has-text("Export…")');
+    await page.waitForSelector('.export-code');
+    for (const tab of ['Qiskit', 'OpenQASM 2.0']) {
+      await page.click(`[role="tab"]:has-text("${tab}")`);
+      const state = `export ${tab}`;
+      img = await shot(page, theme, state.replace(/\W+/g, '-'));
+      await axe(page, theme, state);
+      const code = await box(page, '.export-code');
+      if (code) gate(theme, state, 'code text', measure(img, code, code), 7);
+      const sel = await box(page, '[role="tab"][aria-selected="true"]');
+      if (sel) gate(theme, state, 'selected tab text', measure(img, sel, sel), 7);
+    }
+    await page.keyboard.press('Escape');
     await ctx.close();
   }
   await forcedColors(browser, url);

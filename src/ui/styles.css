@@ -843,6 +843,52 @@ button:disabled {
   padding: 6px 14px;
 }
 
+/* export dialog: reuses the angle dialog box */
+.export-dialog {
+  width: min(720px, calc(100vw - 32px));
+}
+
+.export-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.export-tabs [role='tab'] {
+  padding: 6px 12px;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.export-tabs [role='tab'][aria-selected='true'] {
+  font-weight: 700;
+  border-bottom: 3px solid var(--gate-border);
+}
+
+.export-code {
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  margin: 0 0 10px;
+  max-height: min(55vh, 480px);
+  overflow: auto;
+  white-space: pre;
+}
+
+.export-message {
+  margin: 4px 0 10px;
+}
+
+.export-close {
+  margin-top: 10px;
+}
+
 /* ---------- Bloch strip ---------- */
 
 .bloch-strip {
